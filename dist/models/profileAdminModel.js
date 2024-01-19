@@ -53,7 +53,7 @@ exports.UserProfile = connection_1.default.define('userProfile', {
         defaultValue: false,
     },
     status: {
-        type: sequelize_1.DataTypes.ENUM('Activado', 'Desactivado'),
+        type: sequelize_1.DataTypes.ENUM('Activado', 'Desactivado'), // Define un enum para limitar los valores posibles
         allowNull: false,
         defaultValue: 'Activado', // Puedes establecer el valor predeterminado según tus necesidades
     },

@@ -44,18 +44,18 @@ const sendPasswordResetEmail = (email, username, randomPassword) => __awaiter(vo
         const personalizedEmail = emailTemplate.replace('{{ username }}', username).replace('{{ randomPassword }}', randomPassword);
         // Crear el transporte de nodemailer para enviar correos electrónicos
         const transporter = nodemailer_1.default.createTransport({
-            service: 'gmail',
+            service: 'gmail', // Usar el servicio de correo Gmail
             auth: {
-                user: process.env.MAIL_USER,
+                user: process.env.MAIL_USER, // Nombre de usuario del remitente
                 pass: process.env.MAIL_PASS, // Contraseña del remitente
             },
             secure: true, // Usar una conexión segura
         });
         // Configurar las opciones del correo electrónico
         const mailOptions = {
-            from: process.env.MAIL_USER,
-            to: email,
-            subject: 'Recuperación de Contraseña',
+            from: process.env.MAIL_USER, // Dirección de correo del remitente
+            to: email, // Dirección de correo del destinatario
+            subject: 'Recuperación de Contraseña', // Asunto del correo
             html: personalizedEmail, // Contenido personalizado del correo en formato HTML
         };
         // Enviar el correo de recuperación de contraseña

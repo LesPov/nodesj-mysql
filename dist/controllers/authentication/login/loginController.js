@@ -104,7 +104,7 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             // Si se usó una contraseña aleatoria, generamos un token para la recuperación de contraseña
             const resetPasswordToken = jsonwebtoken_1.default.sign({
                 username: username,
-                rol: user.rol,
+                rol: user.rol, // Incluir el rol en el token para utilizarlo posteriormente
                 userId: user.id // Incluye el userId en el token
             }, process.env.SECRET_KEY || 'pepito123', { expiresIn: '1h' } // Cambia el tiempo de expiración según tus necesidades
             );
@@ -119,7 +119,7 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return res.json({
                 msg: messages_1.successMessages.userLoggedIn,
                 token: token,
-                userId: user.id,
+                userId: user.id, // Devuelve el userId en la respuesta
                 rol: user.rol,
             });
         }

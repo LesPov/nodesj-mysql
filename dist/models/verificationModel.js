@@ -13,7 +13,7 @@ exports.Verification = connection_1.default.define('verification', {
         allowNull: false,
         unique: true,
         references: {
-            model: 'auths',
+            model: 'auths', // Este debe ser el nombre de la tabla en tu base de datos
             key: 'id', // La columna que se usará como clave primaria
         }
     },

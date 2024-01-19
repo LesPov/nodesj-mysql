@@ -94,8 +94,8 @@ const newUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             rol: rol,
         });
         yield profileAdminModel_1.UserProfile.create({
-            userId: newUser.id,
-            firstName: '',
+            userId: newUser.id, // Asociar con el ID del usuario creado
+            firstName: '', // Aquí puedes definir los valores iniciales que quieras para el perfil
             lastName: '',
             // Otros campos del perfil que desees inicializar
         });

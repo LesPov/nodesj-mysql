@@ -28,7 +28,7 @@ exports.Auth = connection_1.default.define('auth', {
     },
     phoneNumber: {
         type: sequelize_1.DataTypes.STRING,
-        allowNull: true,
+        allowNull: true, // Asegúrate de que el campo pueda ser nulo
         unique: true,
     },
     rol: {
