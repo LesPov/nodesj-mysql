@@ -33,7 +33,7 @@ class Server {
      */
     constructor() {
         this.app = express();
-        this.port = process.env.PORT || '3011';
+        this.port = process.env.PORT || '3010';
         this.listen();
         this.middlewares();
         this.routes();
