@@ -64,10 +64,15 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
     expirationDate.setMinutes(expirationDate.getMinutes() + PHONE_VERIFICATION_LOCK_TIME_MINUTES);
 
     // Crear un registro en la tabla 'Verification' si no existe
+    console.log('Punto A');
     let verificationRecord = await Verification.findOne({ where: { userId: user.id } });
+    console.log('Punto B');
     if (!verificationRecord) {
+      console.log('Punto C');
       verificationRecord = await Verification.create({ userId: user.id });
+      console.log('Punto D');
     }
+
 
     // Almacenar el código de verificación generado en el registro de 'Verification'
     await verificationRecord.update({
@@ -106,7 +111,7 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
         });
       });
   } catch (error) {
-    // Manejar errores de la base de datos u otros errores inesperados
+    console.error('Error general:', error);
     res.status(500).json({
       msg: errorMessages.databaseError,
       error,
@@ -260,7 +265,7 @@ export const resendVerificationCodeSMS = async (req: Request, res: Response) => 
     res.status(500).json({
       msg: errorMessages.databaseError,
       error,
-    }); 
+    });
   }
 };
 

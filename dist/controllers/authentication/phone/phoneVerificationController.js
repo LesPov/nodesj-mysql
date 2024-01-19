@@ -68,9 +68,13 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
         const expirationDate = new Date();
         expirationDate.setMinutes(expirationDate.getMinutes() + PHONE_VERIFICATION_LOCK_TIME_MINUTES);
         // Crear un registro en la tabla 'Verification' si no existe
+        console.log('Punto A');
         let verificationRecord = yield verificationModel_1.Verification.findOne({ where: { userId: user.id } });
+        console.log('Punto B');
         if (!verificationRecord) {
+            console.log('Punto C');
             verificationRecord = yield verificationModel_1.Verification.create({ userId: user.id });
+            console.log('Punto D');
         }
         // Almacenar el código de verificación generado en el registro de 'Verification'
         yield verificationRecord.update({
@@ -105,7 +109,7 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
         });
     }
     catch (error) {
-        // Manejar errores de la base de datos u otros errores inesperados
+        console.error('Error general:', error);
         res.status(500).json({
             msg: messages_1.errorMessages.databaseError,
             error,
