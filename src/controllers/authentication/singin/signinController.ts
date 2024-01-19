@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { Auth } from '../../../models/authModel';
 import { errorMessages, successMessages } from '../../../middleware/messages';
 import { sendVerificationEmail } from '../email/emailVerificationController';

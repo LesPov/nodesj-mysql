@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.newUser = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const authModel_1 = require("../../../models/authModel");
 const messages_1 = require("../../../middleware/messages");
 const emailVerificationController_1 = require("../email/emailVerificationController");
@@ -78,7 +78,7 @@ const newUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             msg: messages_1.errorMessages.userEmailExists(email),
         });
     }
-    const hashedPassword = yield bcrypt_1.default.hash(password, 10);
+    const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
     //8. Generar el código de verificación único
     try {
         // Generar el código de verificación único

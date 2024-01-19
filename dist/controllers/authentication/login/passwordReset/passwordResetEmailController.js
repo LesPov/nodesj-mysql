@@ -16,7 +16,7 @@ exports.resetPassword = exports.requestPasswordReset = exports.sendPasswordReset
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const authModel_1 = require("../../../../models/authModel");
 const verificationModel_1 = require("../../../../models/verificationModel"); // Importa el modelo de verificación
 const messages_1 = require("../../../../middleware/messages");
@@ -199,7 +199,7 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             });
         }
         // Encriptar la nueva contraseña y actualizarla en el usuario
-        const hashedPassword = yield bcrypt_1.default.hash(newPassword, 10);
+        const hashedPassword = yield bcryptjs_1.default.hash(newPassword, 10);
         user.password = hashedPassword;
         // Limpiar la contraseña aleatoria y actualizar la fecha de expiración en el registro de verificación
         verification.randomPassword = '';

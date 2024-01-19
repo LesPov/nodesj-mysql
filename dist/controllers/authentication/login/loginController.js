@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loginUser = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const authModel_1 = require("../../../models/authModel");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const messages_1 = require("../../../middleware/messages");
@@ -65,7 +65,7 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             passwordValid = passwordorrandomPassword === user.verification.randomPassword;
         }
         else {
-            passwordValid = yield bcrypt_1.default.compare(passwordorrandomPassword, user.password);
+            passwordValid = yield bcryptjs_1.default.compare(passwordorrandomPassword, user.password);
         }
         // Si la contraseña no es válida
         if (!passwordValid) {

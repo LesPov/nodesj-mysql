@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { Auth, AuthModel } from '../../../../models/authModel';
 import { Verification, VerificationModel } from '../../../../models/verificationModel'; // Importa el modelo de verificación
 import { errorMessages, successMessages } from '../../../../middleware/messages';
