@@ -83,6 +83,7 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
     // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
 // Antes de la actualización de Auth
 console.log('Valor de username antes de la actualización:', username);
+console.log('Antes de la actualización de Auth:', { phoneNumber, username });
 
 // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
 await Auth.update(
