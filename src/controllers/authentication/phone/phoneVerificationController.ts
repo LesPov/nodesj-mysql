@@ -96,7 +96,7 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
     
     // ...
     
-    console.log('Código de verificación enviado por SMS:', onmessage.sid);
+    console.log(`Código de verificación enviado por SMS: ${verificationCode}`);
     
 
 

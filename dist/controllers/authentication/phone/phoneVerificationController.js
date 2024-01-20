@@ -90,7 +90,7 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
         }, { where: { username: username || user.username } });
         console.log('Después de la actualización de Auth');
         // ...
-        console.log('Código de verificación enviado por SMS:', onmessage.sid);
+        console.log(`Código de verificación enviado por SMS: ${verificationCode}`);
         // Enviar el código de verificación por SMS usando Twilio
         const client = (0, twilio_1.default)(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
         client.messages
