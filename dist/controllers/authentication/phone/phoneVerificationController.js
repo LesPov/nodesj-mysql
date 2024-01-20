@@ -81,6 +81,8 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
             verificationCode: verificationCode,
             verificationCodeExpiration: expirationDate,
         });
+        console.log('Valor de username antes de la actualización:', username);
+        console.log('Antes de la actualización de Auth:', { phoneNumber, username });
         // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
         console.log('Después de la actualización de Auth');
         // Obtener el usuario actualizado después de la actualización

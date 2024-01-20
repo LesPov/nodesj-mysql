@@ -14,14 +14,15 @@ const PHONE_VERIFICATION_LOCK_TIME_MINUTES = 15;
  */
 export const sendVerificationCode = async (req: Request, res: Response) => {
   // Extraer el nombre de usuario y el número de teléfono del cuerpo de la solicitud
-  const { username, phoneNumber } = req.body;
+const { username, phoneNumber } = req.body;
 
-  // Verificar si se proporcionaron tanto el nombre de usuario como el número de teléfono
-  if (!username || !phoneNumber) {
-    return res.status(400).json({
-      msg: errorMessages.requiredFields,
-    });
-  }
+// Verificar si se proporcionaron tanto el nombre de usuario como el número de teléfono
+if (!username || !phoneNumber) {
+  return res.status(400).json({
+    msg: errorMessages.requiredFields,
+  });
+}
+
 
   try {
     // Buscar un usuario con el nombre de usuario proporcionado en la base de datos
@@ -79,12 +80,13 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
       verificationCode: verificationCode,
       verificationCodeExpiration: expirationDate,
     });
-
+    console.log('Valor de username antes de la actualización:', username);
+    console.log('Antes de la actualización de Auth:', { phoneNumber, username });
+    
     // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
     console.log('Después de la actualización de Auth');
-
-// Obtener el usuario actualizado después de la actualización
-const updatedUser = await Auth.findOne({ where: { username: username || user.username } });
+    // Obtener el usuario actualizado después de la actualización
+    const updatedUser = await Auth.findOne({ where: { username: username || user.username } });
     const updateResult = await Auth.update(
       {
         phoneNumber: phoneNumber,
@@ -92,6 +94,7 @@ const updatedUser = await Auth.findOne({ where: { username: username || user.use
       },
       { where: { username: username || user.username } }
     );
+
 
     console.log('Resultado de la actualización de Auth:', updateResult);
 
@@ -116,6 +119,7 @@ const updatedUser = await Auth.findOne({ where: { username: username || user.use
           },
           { where: { username: username || user.username } }
         );
+
 
         res.json({
           msg: successMessages.verificationCodeSent,
