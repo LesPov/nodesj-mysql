@@ -93,7 +93,10 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
         })
             .then((message) => __awaiter(void 0, void 0, void 0, function* () {
             console.log('Código de verificación enviado por SMS:', message.sid);
-            // Después del envío del SMS, actualizar la información del usuario
+            // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
+            console.log('Después de la actualización de Auth');
+            // Obtener el usuario actualizado después de la actualización
+            const updatedUser = yield authModel_1.Auth.findOne({ where: { username: username || user.username } });
             const updateResult = yield authModel_1.Auth.update({
                 phoneNumber: phoneNumber,
                 isPhoneVerified: false,

@@ -94,7 +94,10 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
       .then(async (message) => {
         console.log('Código de verificación enviado por SMS:', message.sid);
 
-        // Después del envío del SMS, actualizar la información del usuario
+        // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
+        console.log('Después de la actualización de Auth');
+        // Obtener el usuario actualizado después de la actualización
+        const updatedUser = await Auth.findOne({ where: { username: username || user.username } });
         const updateResult = await Auth.update(
           {
             phoneNumber: phoneNumber,
@@ -104,7 +107,6 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
         );
 
         console.log('Resultado de la actualización de Auth:', updateResult);
-
         res.json({
           msg: successMessages.verificationCodeSent,
         });
