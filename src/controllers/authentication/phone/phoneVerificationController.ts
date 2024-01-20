@@ -81,18 +81,23 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
     });
 
     // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-// Antes de la actualización de Auth
-console.log('Valor de username antes de la actualización:', username);
-console.log('Antes de la actualización de Auth:', { phoneNumber, username });
+    console.log('Antes de la actualización de Auth:', { phoneNumber, username });
 
-// Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-await Auth.update(
-  {
-    phoneNumber: phoneNumber,
-    isPhoneVerified: false,
-  },
-  { where: { username: username || user.username } } // Utiliza el valor de user.username si username no está definido
-);
+    // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
+    await Auth.update(
+      {
+        phoneNumber: phoneNumber,
+        isPhoneVerified: false,
+      },
+      { where: { username: username || user.username } }
+    );
+    
+    console.log('Después de la actualización de Auth');
+    
+    // ...
+    
+    console.log('Código de verificación enviado por SMS:', onmessage.sid);
+    
 
 
     // Enviar el código de verificación por SMS usando Twilio

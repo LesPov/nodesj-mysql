@@ -82,15 +82,15 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
             verificationCodeExpiration: expirationDate,
         });
         // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-        // Antes de la actualización de Auth
-        console.log('Valor de username antes de la actualización:', username);
         console.log('Antes de la actualización de Auth:', { phoneNumber, username });
         // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
         yield authModel_1.Auth.update({
             phoneNumber: phoneNumber,
             isPhoneVerified: false,
-        }, { where: { username: username || user.username } } // Utiliza el valor de user.username si username no está definido
-        );
+        }, { where: { username: username || user.username } });
+        console.log('Después de la actualización de Auth');
+        // ...
+        console.log('Código de verificación enviado por SMS:', onmessage.sid);
         // Enviar el código de verificación por SMS usando Twilio
         const client = (0, twilio_1.default)(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
         client.messages
