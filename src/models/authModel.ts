@@ -4,6 +4,7 @@ import { Verification } from './verificationModel';
 import { UserProfileModel } from './profileAdminModel';
 // Modelo para la autenticación de usuarios
 export interface AuthModel extends Model {
+  [x: string]: any;
 
   id: number;
   username: string;
