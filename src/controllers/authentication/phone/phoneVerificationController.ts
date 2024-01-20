@@ -14,14 +14,14 @@ const PHONE_VERIFICATION_LOCK_TIME_MINUTES = 15;
  */
 export const sendVerificationCode = async (req: Request, res: Response) => {
   // Extraer el nombre de usuario y el número de teléfono del cuerpo de la solicitud
-const { username, phoneNumber } = req.body;
+  const { username, phoneNumber } = req.body;
 
-// Verificar si se proporcionaron tanto el nombre de usuario como el número de teléfono
-if (!username || !phoneNumber) {
-  return res.status(400).json({
-    msg: errorMessages.requiredFields,
-  });
-}
+  // Verificar si se proporcionaron tanto el nombre de usuario como el número de teléfono
+  if (!username || !phoneNumber) {
+    return res.status(400).json({
+      msg: errorMessages.requiredFields,
+    });
+  }
 
 
   try {
@@ -80,26 +80,9 @@ if (!username || !phoneNumber) {
       verificationCode: verificationCode,
       verificationCodeExpiration: expirationDate,
     });
-    console.log('Valor de username antes de la actualización:', username);
+    // Antes de la actualización de Auth
     console.log('Antes de la actualización de Auth:', { phoneNumber, username });
-    
-    // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-    console.log('Después de la actualización de Auth');
-    // Obtener el usuario actualizado después de la actualización
-    const updatedUser = await Auth.findOne({ where: { username: username || user.username } });
-    const updateResult = await Auth.update(
-      {
-        phoneNumber: phoneNumber,
-        isPhoneVerified: false,
-      },
-      { where: { username: username || user.username } }
-    );
 
-
-    console.log('Resultado de la actualización de Auth:', updateResult);
-
-
-    // Enviar el código de verificación por SMS usando Twilio
     // Enviar el código de verificación por SMS usando Twilio
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     client.messages
@@ -111,8 +94,8 @@ if (!username || !phoneNumber) {
       .then(async (message) => {
         console.log('Código de verificación enviado por SMS:', message.sid);
 
-        // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-        await Auth.update(
+        // Después del envío del SMS, actualizar la información del usuario
+        const updateResult = await Auth.update(
           {
             phoneNumber: phoneNumber,
             isPhoneVerified: false,
@@ -120,6 +103,7 @@ if (!username || !phoneNumber) {
           { where: { username: username || user.username } }
         );
 
+        console.log('Resultado de la actualización de Auth:', updateResult);
 
         res.json({
           msg: successMessages.verificationCodeSent,
@@ -132,6 +116,7 @@ if (!username || !phoneNumber) {
           error,
         });
       });
+
 
   } catch (error) {
     console.error('Error general:', error);
