@@ -81,13 +81,17 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
     });
 
     // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-    await Auth.update(
-      {
-        phoneNumber: phoneNumber,
-        isPhoneVerified: false,
-      },
-      { where: { username: username } }
-    );
+   // Antes de la actualización de Auth
+console.log('Valor de username antes de la actualización:', username);
+
+// Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
+await Auth.update(
+  {
+    phoneNumber: phoneNumber,
+    isPhoneVerified: false,
+  },
+  { where: { username: username } }
+);
 
     // Enviar el código de verificación por SMS usando Twilio
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);

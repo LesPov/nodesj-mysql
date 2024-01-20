@@ -82,6 +82,9 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
             verificationCodeExpiration: expirationDate,
         });
         // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
+        // Antes de la actualización de Auth
+        console.log('Valor de username antes de la actualización:', username);
+        // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
         yield authModel_1.Auth.update({
             phoneNumber: phoneNumber,
             isPhoneVerified: false,
