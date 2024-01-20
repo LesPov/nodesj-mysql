@@ -13,7 +13,10 @@ export const errorMessages = {
   userNotExists: (username: string) => `No existe un usuario con el nombre ${username} en la base de datos`,
   invalidPassword: 'Contraseña incorrecta',
   userNotVerified: 'El usuario aún no ha sido verificado. Verifica tu correo electrónico para activar tu cuenta.',
+  numberNotVerified: 'El usuario aún no ha sido verificado. Verifica tu numero celular para activar tu cuenta.',
   accountLocked: 'La cuenta está bloqueada temporalmente debido a múltiples intentos fallidos. Inténtalo de nuevo más tarde.',
+  accountLockedv1: (timeLeft: string) => `La cuenta está bloqueada temporalmente debido a múltiples intentos fallidos. Inténtalo de nuevo más tarde. Tiempo restante: ${timeLeft} minutos.`,
+
   incorrectPassword: (attempts: number) => `Contraseña incorrecta. Intentos fallidos: ${attempts}`,
   verificationCodeNotFound: `Codigo a expirado registrate de nuevo `,
   // Errores de validación de roles y tokens

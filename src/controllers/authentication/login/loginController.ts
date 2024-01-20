@@ -10,7 +10,7 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const getUserByUsername = async (username: string) => {
   return await Auth.findOne({
     where: { username: username },
-    include: ['verification'], // Cambiado para evitar la carga innecesaria de todos los atributos
+    include: ['verification'],
   });
 };
 
@@ -35,13 +35,13 @@ const handleIncorrectPassword = async (user: any, res: Response) => {
 };
 
 const handleSuccessfulLogin = (user: any, res: Response, password: string) => {
-  return res.json({
-    msg: password.length === 8 ? 'Inicio de sesión Recuperación de contraseña' : successMessages.userLoggedIn,
-    token: generateAuthToken(user),
-    userId: user.id,
-    rol: user.rol,
-    passwordorrandomPassword: password.length === 8 ? 'randomPassword' : undefined,
-  });
+  const msg = password.length === 8 ? 'Inicio de sesión Recuperación de contraseña' : successMessages.userLoggedIn;
+  const token = generateAuthToken(user);
+  const userId = user.id;
+  const rol = user.rol;
+  const passwordorrandomPassword = password.length === 8 ? 'randomPassword' : undefined;
+
+  return res.json({ msg, token, userId, rol, passwordorrandomPassword });
 };
 
 const generateAuthToken = (user: any) => {
@@ -52,6 +52,9 @@ const generateAuthToken = (user: any) => {
   }, process.env.SECRET_KEY || 'pepito123');
 };
 
+const sendBadRequest = (res: Response, msg: string) => res.status(400).json({ msg });
+const sendDatabaseError = (res: Response, error: any) => res.status(500).json({ msg: errorMessages.databaseError, error });
+
 export const loginUser = async (req: Request, res: Response) => {
   const { username, passwordorrandomPassword } = req.body;
 
@@ -59,53 +62,69 @@ export const loginUser = async (req: Request, res: Response) => {
     const user: any = await getUserByUsername(username);
 
     if (!user) {
-      return res.status(400).json({ msg: errorMessages.userNotExists(username) });
+      return sendBadRequest(res, errorMessages.userNotExists(username));
     }
 
-    if (!user.verification.isEmailVerified) {
-      return handleUnverifiedUser(res);
+    if (!isUserVerified(user, res) || handleBlockExpiration(user, res)) {
+      return;
     }
 
-    if (!user.verification.isPhoneVerified) {
-      return res.status(400).json({ msg: errorMessages.phoneVerificationRequired });
-    }
-
-    if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-      const timeLeft = handleBlockExpiration(user, res);
-      if (timeLeft !== undefined) {
-        return res.status(400).json({
-          msg: `La cuenta está bloqueada temporalmente debido a múltiples intentos fallidos. Inténtalo de nuevo más tarde. Tiempo restante: ${timeLeft} minutos`,
-        });
-      }
-    }
-
-    const passwordValid = await validatePassword(user, passwordorrandomPassword);
-    if (!passwordValid) {
+    if (!(await validatePassword(user, passwordorrandomPassword))) {
       return handleIncorrectPassword(user, res);
     }
 
-    await user.verification.update({ loginAttempts: 0 });
-
-    const timeLeft = handleBlockExpiration(user, res);
-    if (timeLeft !== undefined) {
-      return res.status(400).json({
-        msg: `La cuenta está bloqueada temporalmente debido a múltiples intentos fallidos. Inténtalo de nuevo más tarde. Tiempo restante: ${timeLeft} minutos`,
-      });
-    }
+    await resetLoginAttempts(user);
 
     return handleSuccessfulLogin(user, res, passwordorrandomPassword);
   } catch (error) {
-    res.status(500).json({ msg: errorMessages.databaseError, error });
+    return sendDatabaseError(res, error);
   }
 };
 
-const handleBlockExpiration = (user: any, res: Response) => {
+const isUserVerified = (user: any, res: Response) => {
+  if (!isEmailVerified(user, res) || !isPhoneVerified(user, res)) {
+    return false;
+  }
+  return true;
+};
+
+const isEmailVerified = (user: any, res: Response) => {
+  if (!user.verification.isEmailVerified) {
+    handleUnverifiedUser(res);
+    return false;
+  }
+  return true;
+};
+
+const isPhoneVerified = (user: any, res: Response) => {
+  if (!user.verification.isPhoneVerified) {
+    res.status(400).json({ msg: errorMessages.numberNotVerified });
+    return false;
+  }
+  return true;
+};
+
+const handleBlockExpiration = (user: any, res: Response): boolean => {
   const currentDate = new Date();
   if (user.verification.blockExpiration && user.verification.blockExpiration > currentDate) {
-    return Math.ceil((user.verification.blockExpiration.getTime() - currentDate.getTime()) / (60 * 1000));
+    const timeLeft = calculateTimeLeft(user.verification.blockExpiration, currentDate);
+    res.status(400).json({ msg: errorMessages.accountLockedv1(timeLeft) });
+    return true;
   }
-  return undefined;
+  return false;
 };
+
+const calculateTimeLeft = (blockExpiration: Date, currentDate: Date): string => {
+  const minutesLeft = Math.ceil((blockExpiration.getTime() - currentDate.getTime()) / (60 * 1000));
+  return minutesLeft.toString();
+};
+
+
+
+const resetLoginAttempts = async (user: any) => {
+  await user.verification.update({ loginAttempts: 0 });
+};
+
 
 const validatePassword = async (user: any, password: string) => {
   if (password.length === 8) {
@@ -113,4 +132,4 @@ const validatePassword = async (user: any, password: string) => {
   } else {
     return await bcrypt.compare(password, user.password);
   }
-};
+}; 
