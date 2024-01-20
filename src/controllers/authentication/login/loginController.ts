@@ -24,15 +24,22 @@ const handleLockedAccount = async (username: string, res: Response) => {
 };
 
 const handleIncorrectPassword = async (user: any, res: Response) => {
-  const updatedLoginAttempts = (user.verification.loginAttempts || 0) + 1;
-  await user.verification.update({ loginAttempts: updatedLoginAttempts });
+  const updatedLoginAttempts = await incrementLoginAttempts(user);
 
   if (updatedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
     return handleLockedAccount(user.username, res);
   }
 
-  return res.status(400).json({ msg: errorMessages.incorrectPassword(updatedLoginAttempts) });
+  const errorMessage = errorMessages.incorrectPassword(updatedLoginAttempts);
+  return sendBadRequest(res, errorMessage);
 };
+
+const incrementLoginAttempts = async (user: any): Promise<number> => {
+  const updatedLoginAttempts = (user.verification.loginAttempts || 0) + 1;
+  await user.verification.update({ loginAttempts: updatedLoginAttempts });
+  return updatedLoginAttempts;
+};
+
 
 const handleSuccessfulLogin = (user: any, res: Response, password: string) => {
   const msg = password.length === 8 ? 'Inicio de sesión Recuperación de contraseña' : successMessages.userLoggedIn;
@@ -82,11 +89,12 @@ export const loginUser = async (req: Request, res: Response) => {
 };
 
 const isUserVerified = (user: any, res: Response) => {
-  if (!isEmailVerified(user, res) || !isPhoneVerified(user, res)) {
-    return false;
-  }
-  return true;
+  const isEmailValid = isEmailVerified(user, res);
+  const isPhoneValid = isPhoneVerified(user, res);
+
+  return isEmailValid && isPhoneValid;
 };
+
 
 const isEmailVerified = (user: any, res: Response) => {
   if (!user.verification.isEmailVerified) {
@@ -105,13 +113,23 @@ const isPhoneVerified = (user: any, res: Response) => {
 };
 
 const handleBlockExpiration = (user: any, res: Response): boolean => {
-  const currentDate = new Date();
-  if (user.verification.blockExpiration && user.verification.blockExpiration > currentDate) {
-    const timeLeft = calculateTimeLeft(user.verification.blockExpiration, currentDate);
-    res.status(400).json({ msg: errorMessages.accountLockedv1(timeLeft) });
+  if (isAccountBlocked(user)) {
+    const timeLeft = calculateTimeLeft(user.verification.blockExpiration, new Date());
+    sendAccountBlockedResponse(res, timeLeft);
     return true;
   }
   return false;
+};
+
+const isAccountBlocked = (user: any): boolean => {
+  const blockExpiration = user.verification.blockExpiration;
+  const currentDate = new Date();
+  
+  return blockExpiration && blockExpiration > currentDate;
+};
+
+const sendAccountBlockedResponse = (res: Response, timeLeft: string): void => {
+  res.status(400).json({ msg: errorMessages.accountLockedv1(timeLeft) });
 };
 
 const calculateTimeLeft = (blockExpiration: Date, currentDate: Date): string => {
