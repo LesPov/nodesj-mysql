@@ -1,6 +1,6 @@
 
 import { Router } from "express";
-import {  newUser } from "../../../controllers/authentication/singin/signinController";
+import {  newUser } from "../../../controllers/authentication/signup/signupController";
 
 const router = Router();
 // Rutas existentes para registro 

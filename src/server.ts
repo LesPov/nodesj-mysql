@@ -5,7 +5,7 @@
 
 import express, { Application } from 'express';
 import cors from 'cors';
-import signinRoutes from "./routes/authentication/singin/singinVerificationRoutes"; // Importar las rutas de signin
+import signinRoutes from "./routes/authentication/signup/signupVerificationRoutes"; // Importar las rutas de signin
 import loginRoutes from "./routes/authentication/login/loginVerificationRoutes"; // Importar las rutas de login
 import randomPass from "./routes/authentication/login/PasswordReset/passwordResetEmailRoutes"; // Importar las rutas de login
 import emailVerificationRoutes from './routes/authentication/email/emailVerificationRoutes';
