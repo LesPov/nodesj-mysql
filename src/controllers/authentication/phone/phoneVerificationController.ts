@@ -13,8 +13,10 @@ const PHONE_VERIFICATION_LOCK_TIME_MINUTES = 15;
  * @returns {Response} - Respuesta JSON con un mensaje indicando el estado de la operación.
  */
 export const sendVerificationCode = async (req: Request, res: Response) => {
+  // Extraer el nombre de usuario y el número de teléfono del cuerpo de la solicitud
   const { username, phoneNumber } = req.body;
 
+  // Verificar si se proporcionaron tanto el nombre de usuario como el número de teléfono
   if (!username || !phoneNumber) {
     return res.status(400).json({
       msg: errorMessages.requiredFields,
@@ -22,39 +24,46 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
   }
 
   try {
+    // Buscar un usuario con el nombre de usuario proporcionado en la base de datos
     const user: any = await Auth.findOne({ where: { username: username } });
 
+    // Si no se encuentra un usuario, devolver un mensaje de error
     if (!user) {
       return res.status(400).json({
         msg: errorMessages.userNotExists(username),
       });
     }
 
+    // Verificar si el usuario ya está verificado a través de su correo electrónico o si ya ha sido autenticado
     if (user.isVerified || user.isEmailVerified) {
       return res.status(400).json({
         msg: errorMessages.userAlreadyVerified,
       });
     }
 
+    // Verificar si el usuario ya tiene un número de teléfono asociado
     if (user.phoneNumber) {
       return res.status(400).json({
         msg: errorMessages.phoneNumberExists,
       });
     }
 
+    // Verificar si ya hay otro usuario con el mismo número de teléfono
     const existingUserWithPhoneNumber = await Auth.findOne({ where: { phoneNumber: phoneNumber } });
-
     if (existingUserWithPhoneNumber) {
       return res.status(400).json({
         msg: errorMessages.phoneNumberInUse,
       });
     }
 
+    // Generar un código de verificación
     const verificationCode = generateVerificationCode();
 
+    // Calcular la fecha de expiración del código de verificación
     const expirationDate = new Date();
     expirationDate.setMinutes(expirationDate.getMinutes() + PHONE_VERIFICATION_LOCK_TIME_MINUTES);
 
+    // Crear un registro en la tabla 'Verification' si no existe
     console.log('Punto A');
     let verificationRecord = await Verification.findOne({ where: { userId: user.id } });
     console.log('Punto B');
@@ -64,49 +73,48 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
       console.log('Punto D');
     }
 
+
+    // Almacenar el código de verificación generado en el registro de 'Verification'
     await verificationRecord.update({
       verificationCode: verificationCode,
       verificationCodeExpiration: expirationDate,
     });
 
-    console.log('Valor de username antes de la actualización:', username);
+    // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
+// Antes de la actualización de Auth
+console.log('Valor de username antes de la actualización:', username);
 
-    if (user.phoneNumber && user.phoneNumber !== phoneNumber) {
-      await Auth.update(
-        {
-          phoneNumber: phoneNumber,
-          isPhoneVerified: false,
-        },
-        { where: { username: user.username } } // Utiliza user.username en lugar de username
-      );
+// Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
+await Auth.update(
+  {
+    phoneNumber: phoneNumber,
+    isPhoneVerified: false,
+  },
+  { where: { username: username || user.username } } // Utiliza el valor de user.username si username no está definido
+);
 
-      const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-      client.messages
-        .create({
-          body: `Tu código de verificación es: ${verificationCode}`,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: phoneNumber,
-        })
-        .then((message) => {
-          console.log('Código de verificación enviado por SMS:', message.sid);
-          res.json({
-            msg: successMessages.verificationCodeSent,
-          });
-        })
-        .catch((error) => {
-          console.error('Error al enviar el código de verificación por SMS:', error);
-          res.status(500).json({
-            msg: errorMessages.phoneNumberVerificationError,
-            error,
-          });
+    // Enviar el código de verificación por SMS usando Twilio
+    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    client.messages
+      .create({
+        body: `Tu código de verificación es: ${verificationCode}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber,
+      })
+      .then((message) => {
+        console.log('Código de verificación enviado por SMS:', message.sid);
+        res.json({
+          msg: successMessages.verificationCodeSent,
         });
-    } else {
-      return res.status(500).json({
-        msg: errorMessages.phoneNumberVerificationError,
-        error: 'User does not have a valid phone number.',
+      })
+      .catch((error) => {
+        console.error('Error al enviar el código de verificación por SMS:', error);
+        res.status(500).json({
+          msg: errorMessages.phoneNumberVerificationError,
+          error,
+        });
       });
-    }
   } catch (error) {
     console.error('Error general:', error);
     res.status(500).json({
