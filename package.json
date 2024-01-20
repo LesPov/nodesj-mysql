@@ -8,7 +8,7 @@
     "dev": "nodemon dist/index.js",
     "typescript": "tsc --watch",
     "copy-templates": "copyfiles -u 1 src/controllers/templates/** dist",
-    "start": "node dist/index.js --only=prod"
+    "start": "node --only=prod dist/index.js" 
 
 
   },
