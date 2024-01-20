@@ -81,25 +81,22 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
     });
 
     // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-    console.log('Antes de la actualización de Auth:', { phoneNumber, username });
+    console.log('Después de la actualización de Auth');
 
-    // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-    await Auth.update(
+// Obtener el usuario actualizado después de la actualización
+const updatedUser = await Auth.findOne({ where: { username: username || user.username } });
+    const updateResult = await Auth.update(
       {
         phoneNumber: phoneNumber,
         isPhoneVerified: false,
       },
       { where: { username: username || user.username } }
     );
-    
-    console.log('Después de la actualización de Auth');
-    
-    // ...
-    
-    console.log(`Código de verificación enviado por SMS: ${verificationCode}`);
-    
+
+    console.log('Resultado de la actualización de Auth:', updateResult);
 
 
+    // Enviar el código de verificación por SMS usando Twilio
     // Enviar el código de verificación por SMS usando Twilio
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     client.messages
@@ -108,8 +105,18 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
         from: process.env.TWILIO_PHONE_NUMBER,
         to: phoneNumber,
       })
-      .then((message) => {
+      .then(async (message) => {
         console.log('Código de verificación enviado por SMS:', message.sid);
+
+        // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
+        await Auth.update(
+          {
+            phoneNumber: phoneNumber,
+            isPhoneVerified: false,
+          },
+          { where: { username: username || user.username } }
+        );
+
         res.json({
           msg: successMessages.verificationCodeSent,
         });
@@ -121,6 +128,7 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
           error,
         });
       });
+
   } catch (error) {
     console.error('Error general:', error);
     res.status(500).json({

@@ -82,15 +82,15 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
             verificationCodeExpiration: expirationDate,
         });
         // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-        console.log('Antes de la actualización de Auth:', { phoneNumber, username });
-        // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
-        yield authModel_1.Auth.update({
+        console.log('Después de la actualización de Auth');
+        // Obtener el usuario actualizado después de la actualización
+        const updatedUser = yield authModel_1.Auth.findOne({ where: { username: username || user.username } });
+        const updateResult = yield authModel_1.Auth.update({
             phoneNumber: phoneNumber,
             isPhoneVerified: false,
         }, { where: { username: username || user.username } });
-        console.log('Después de la actualización de Auth');
-        // ...
-        console.log(`Código de verificación enviado por SMS: ${verificationCode}`);
+        console.log('Resultado de la actualización de Auth:', updateResult);
+        // Enviar el código de verificación por SMS usando Twilio
         // Enviar el código de verificación por SMS usando Twilio
         const client = (0, twilio_1.default)(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
         client.messages
@@ -99,12 +99,17 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
             from: process.env.TWILIO_PHONE_NUMBER,
             to: phoneNumber,
         })
-            .then((message) => {
+            .then((message) => __awaiter(void 0, void 0, void 0, function* () {
             console.log('Código de verificación enviado por SMS:', message.sid);
+            // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
+            yield authModel_1.Auth.update({
+                phoneNumber: phoneNumber,
+                isPhoneVerified: false,
+            }, { where: { username: username || user.username } });
             res.json({
                 msg: messages_1.successMessages.verificationCodeSent,
             });
-        })
+        }))
             .catch((error) => {
             console.error('Error al enviar el código de verificación por SMS:', error);
             res.status(500).json({
