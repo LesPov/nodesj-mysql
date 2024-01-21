@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -34,49 +25,47 @@ const isImage = (filename) => {
     const ext = path_1.default.extname(filename).toLowerCase();
     return allowedImageExtensions.includes(ext);
 };
-const uploadProfilePicture = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const uploadProfilePicture = async (req, res) => {
     const { userId } = req.params;
     try {
-        const user = yield authModel_1.Auth.findByPk(userId);
+        const user = await authModel_1.Auth.findByPk(userId);
         if (!user) {
             return res.status(404).json({ msg: messages_1.errorMessages.userNotFound });
         }
         return new Promise((resolve) => {
-            upload(req, res, function (err) {
-                return __awaiter(this, void 0, void 0, function* () {
-                    if (err) {
-                        console.error('Error al subir la imagen:', err);
-                        return resolve(res.status(500).json({ msg: messages_1.errorMessages.serverError }));
-                    }
-                    if (!req.file) {
-                        return resolve(res.status(400).json({ msg: messages_1.errorMessages.noFileUploaded }));
-                    }
-                    if (!isImage(req.file.filename)) {
-                        yield promises_1.default.unlink(req.file.path);
-                        return resolve(res.status(400).json({ msg: messages_1.errorMessages.invalidImageFormat }));
-                    }
-                    const imagePath = req.file.path;
-                    const userProfile = yield profileAdminModel_1.UserProfile.findOne({ where: { userId } });
-                    if (userProfile) {
-                        if (userProfile.profilePicture) {
-                            const previousImagePath = path_1.default.resolve('uploads', userProfile.profilePicture);
-                            try {
-                                yield promises_1.default.access(previousImagePath);
-                                yield promises_1.default.unlink(previousImagePath);
-                                console.log('Imagen anterior eliminada correctamente');
-                            }
-                            catch (unlinkError) {
-                                console.warn('La imagen anterior no existe o no se pudo eliminar:', messages_1.errorMessages.unexpectedError);
-                            }
+            upload(req, res, async function (err) {
+                if (err) {
+                    console.error('Error al subir la imagen:', err);
+                    return resolve(res.status(500).json({ msg: messages_1.errorMessages.serverError }));
+                }
+                if (!req.file) {
+                    return resolve(res.status(400).json({ msg: messages_1.errorMessages.noFileUploaded }));
+                }
+                if (!isImage(req.file.filename)) {
+                    await promises_1.default.unlink(req.file.path);
+                    return resolve(res.status(400).json({ msg: messages_1.errorMessages.invalidImageFormat }));
+                }
+                const imagePath = req.file.path;
+                const userProfile = await profileAdminModel_1.UserProfile.findOne({ where: { userId } });
+                if (userProfile) {
+                    if (userProfile.profilePicture) {
+                        const previousImagePath = path_1.default.resolve('uploads', userProfile.profilePicture);
+                        try {
+                            await promises_1.default.access(previousImagePath);
+                            await promises_1.default.unlink(previousImagePath);
+                            console.log('Imagen anterior eliminada correctamente');
                         }
-                        userProfile.profilePicture = req.file.filename;
-                        yield userProfile.save();
-                        return resolve(res.json({ msg: messages_1.successMessages.profilePictureUploaded }));
+                        catch (unlinkError) {
+                            console.warn('La imagen anterior no existe o no se pudo eliminar:', messages_1.errorMessages.unexpectedError);
+                        }
                     }
-                    else {
-                        return resolve(res.status(404).json({ msg: messages_1.errorMessages.userProfileNotFound }));
-                    }
-                });
+                    userProfile.profilePicture = req.file.filename;
+                    await userProfile.save();
+                    return resolve(res.json({ msg: messages_1.successMessages.profilePictureUploaded }));
+                }
+                else {
+                    return resolve(res.status(404).json({ msg: messages_1.errorMessages.userProfileNotFound }));
+                }
             });
         });
     }
@@ -84,6 +73,6 @@ const uploadProfilePicture = (req, res) => __awaiter(void 0, void 0, void 0, fun
         console.error('Error al subir la imagen de perfil:', error);
         return res.status(500).json({ msg: messages_1.errorMessages.serverError });
     }
-});
+};
 exports.uploadProfilePicture = uploadProfilePicture;
 exports.default = exports.uploadProfilePicture;

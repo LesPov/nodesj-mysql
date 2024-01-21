@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -25,7 +16,7 @@ const PHONE_VERIFICATION_LOCK_TIME_MINUTES = 15;
  * @param {Response} res - Objeto de respuesta de Express.
  * @returns {Response} - Respuesta JSON con un mensaje indicando el estado de la operación.
  */
-const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const sendVerificationCode = async (req, res) => {
     // Extraer el nombre de usuario y el número de teléfono del cuerpo de la solicitud
     const { username, phoneNumber } = req.body;
     // Verificar si se proporcionaron tanto el nombre de usuario como el número de teléfono
@@ -36,7 +27,7 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
     try {
         // Buscar un usuario con el nombre de usuario proporcionado en la base de datos
-        const user = yield authModel_1.Auth.findOne({ where: { username: username } });
+        const user = await authModel_1.Auth.findOne({ where: { username: username } });
         // Si no se encuentra un usuario, devolver un mensaje de error
         if (!user) {
             return res.status(400).json({
@@ -56,7 +47,7 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
             });
         }
         // Verificar si ya hay otro usuario con el mismo número de teléfono
-        const existingUserWithPhoneNumber = yield authModel_1.Auth.findOne({ where: { phoneNumber: phoneNumber } });
+        const existingUserWithPhoneNumber = await authModel_1.Auth.findOne({ where: { phoneNumber: phoneNumber } });
         if (existingUserWithPhoneNumber) {
             return res.status(400).json({
                 msg: messages_1.errorMessages.phoneNumberInUse,
@@ -69,15 +60,15 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
         expirationDate.setMinutes(expirationDate.getMinutes() + PHONE_VERIFICATION_LOCK_TIME_MINUTES);
         // Crear un registro en la tabla 'Verification' si no existe
         console.log('Punto A');
-        let verificationRecord = yield verificationModel_1.Verification.findOne({ where: { userId: user.id } });
+        let verificationRecord = await verificationModel_1.Verification.findOne({ where: { userId: user.id } });
         console.log('Punto B');
         if (!verificationRecord) {
             console.log('Punto C');
-            verificationRecord = yield verificationModel_1.Verification.create({ userId: user.id });
+            verificationRecord = await verificationModel_1.Verification.create({ userId: user.id });
             console.log('Punto D');
         }
         // Almacenar el código de verificación generado en el registro de 'Verification'
-        yield verificationRecord.update({
+        await verificationRecord.update({
             verificationCode: verificationCode,
             verificationCodeExpiration: expirationDate,
         });
@@ -91,13 +82,13 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
             from: process.env.TWILIO_PHONE_NUMBER,
             to: phoneNumber,
         })
-            .then((message) => __awaiter(void 0, void 0, void 0, function* () {
+            .then(async (message) => {
             console.log('Código de verificación enviado por SMS:', message.sid);
             // Actualizar la información del usuario (número de teléfono y estado de verificación de teléfono)
             console.log('Después de la actualización de Auth');
             // Obtener el usuario actualizado después de la actualización
-            const updatedUser = yield authModel_1.Auth.findOne({ where: { username: username || user.username } });
-            const updateResult = yield authModel_1.Auth.update({
+            const updatedUser = await authModel_1.Auth.findOne({ where: { username: username || user.username } });
+            const updateResult = await authModel_1.Auth.update({
                 phoneNumber: phoneNumber,
                 isPhoneVerified: false,
             }, { where: { username: username || user.username } });
@@ -105,7 +96,7 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
             res.json({
                 msg: messages_1.successMessages.verificationCodeSent,
             });
-        }))
+        })
             .catch((error) => {
             console.error('Error al enviar el código de verificación por SMS:', error);
             res.status(500).json({
@@ -121,7 +112,7 @@ const sendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, fun
             error,
         });
     }
-});
+};
 exports.sendVerificationCode = sendVerificationCode;
 /**
  * Verifica el número de teléfono de un usuario mediante el código de verificación recibido por SMS.
@@ -132,12 +123,12 @@ exports.sendVerificationCode = sendVerificationCode;
  * @throws {Error} Si hay un error al interactuar con la base de datos.
  * @returns {Response} - Mensaje de éxito o error.
  */
-const verifyPhoneNumber = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const verifyPhoneNumber = async (req, res) => {
     // Extraer datos de la solicitud
     const { username, phoneNumber, verificationCode } = req.body;
     try {
         // Buscar al usuario en la base de datos
-        const user = yield authModel_1.Auth.findOne({ where: { username: username } });
+        const user = await authModel_1.Auth.findOne({ where: { username: username } });
         // Validar si el usuario existe
         if (!user) {
             return res.status(400).json({
@@ -157,7 +148,7 @@ const verifyPhoneNumber = (req, res) => __awaiter(void 0, void 0, void 0, functi
             });
         }
         // Buscar el registro de verificación correspondiente al usuario
-        let verificationRecord = yield verificationModel_1.Verification.findOne({ where: { userId: user.id } });
+        let verificationRecord = await verificationModel_1.Verification.findOne({ where: { userId: user.id } });
         // Validar si el código de verificación proporcionado coincide con el almacenado en la base de datos
         if (!verificationRecord || verificationRecord.verificationCode !== verificationCode) {
             return res.status(400).json({
@@ -165,10 +156,10 @@ const verifyPhoneNumber = (req, res) => __awaiter(void 0, void 0, void 0, functi
             });
         }
         // Marcar el número de teléfono como verificado en la tabla Verification
-        yield verificationRecord.update({ isPhoneVerified: true });
+        await verificationRecord.update({ isPhoneVerified: true });
         // Verificar si el correo electrónico del usuario ya está verificado
         if (verificationRecord.isEmailVerified) {
-            yield verificationRecord.update({ isVerified: true });
+            await verificationRecord.update({ isVerified: true });
         }
         // Respuesta de éxito
         res.json({
@@ -182,7 +173,7 @@ const verifyPhoneNumber = (req, res) => __awaiter(void 0, void 0, void 0, functi
             error,
         });
     }
-});
+};
 exports.verifyPhoneNumber = verifyPhoneNumber;
 /**
  * Reenvía un código de verificación por SMS al número de teléfono asociado a un usuario.
@@ -193,12 +184,12 @@ exports.verifyPhoneNumber = verifyPhoneNumber;
  * @throws {Error} Si hay un error al interactuar con la base de datos o al enviar el SMS.
  * @returns {Response} - Mensaje de éxito o error.
  */
-const resendVerificationCodeSMS = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const resendVerificationCodeSMS = async (req, res) => {
     // Extraer el nombre de usuario del cuerpo de la solicitud
     const { username } = req.body;
     try {
         // Buscar al usuario en la base de datos
-        const user = yield authModel_1.Auth.findOne({ where: { username: username } });
+        const user = await authModel_1.Auth.findOne({ where: { username: username } });
         // Validar si el usuario no existe
         if (!user) {
             return res.status(400).json({
@@ -217,13 +208,13 @@ const resendVerificationCodeSMS = (req, res) => __awaiter(void 0, void 0, void 0
         const expirationDate = new Date();
         expirationDate.setMinutes(expirationDate.getMinutes() + PHONE_VERIFICATION_LOCK_TIME_MINUTES);
         // Buscar el registro de verificación correspondiente al usuario
-        let verificationRecord = yield verificationModel_1.Verification.findOne({ where: { userId: user.id } });
+        let verificationRecord = await verificationModel_1.Verification.findOne({ where: { userId: user.id } });
         // Si no existe, crear un nuevo registro en la tabla 'Verification'
         if (!verificationRecord) {
-            verificationRecord = yield verificationModel_1.Verification.create({ userId: user.id });
+            verificationRecord = await verificationModel_1.Verification.create({ userId: user.id });
         }
         // Actualizar el registro de verificación con el nuevo código y la fecha de expiración
-        yield verificationRecord.update({
+        await verificationRecord.update({
             verificationCode: newVerificationCode,
             verificationCodeExpiration: expirationDate,
         });
@@ -256,5 +247,5 @@ const resendVerificationCodeSMS = (req, res) => __awaiter(void 0, void 0, void 0
             error,
         });
     }
-});
+};
 exports.resendVerificationCodeSMS = resendVerificationCodeSMS;

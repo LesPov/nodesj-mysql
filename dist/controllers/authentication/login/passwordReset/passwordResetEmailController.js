@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -28,14 +19,14 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * @param {string} usernameOrEmail - Nombre de usuario o correo electrónico.
  * @returns {Promise<AuthModel | null>} - Usuario encontrado o nulo si no existe.
  */
-const findUserByUsernameOrEmail = (usernameOrEmail) => __awaiter(void 0, void 0, void 0, function* () {
+const findUserByUsernameOrEmail = async (usernameOrEmail) => {
     if (EMAIL_REGEX.test(usernameOrEmail)) {
-        return yield authModel_1.Auth.findOne({ where: { email: usernameOrEmail }, include: [verificationModel_1.Verification] });
+        return await authModel_1.Auth.findOne({ where: { email: usernameOrEmail }, include: [verificationModel_1.Verification] });
     }
     else {
-        return yield authModel_1.Auth.findOne({ where: { username: usernameOrEmail }, include: [verificationModel_1.Verification] });
+        return await authModel_1.Auth.findOne({ where: { username: usernameOrEmail }, include: [verificationModel_1.Verification] });
     }
-});
+};
 /**
  * Verificar si la cuenta del usuario está verificada.
  * @param {AuthModel} user - Usuario para verificar.
@@ -122,35 +113,35 @@ const validateNewPassword = (newPassword) => {
  * @param {string} newPassword - Nueva contraseña a encriptar y asignar al usuario.
  * @returns {Promise<void>} - Resuelve cuando la contraseña se ha actualizado correctamente.
  */
-const updatePassword = (user, newPassword) => __awaiter(void 0, void 0, void 0, function* () {
-    const hashedPassword = yield bcryptjs_1.default.hash(newPassword, 10);
+const updatePassword = async (user, newPassword) => {
+    const hashedPassword = await bcryptjs_1.default.hash(newPassword, 10);
     user.password = hashedPassword;
-});
+};
 /**
  * Limpiar la contraseña aleatoria y actualizar la fecha de expiración en el registro de verificación.
  * @param {VerificationModel} verification - Registro de verificación al que se le actualizarán los datos.
  * @returns {Promise<void>} - Resuelve cuando se han actualizado los datos correctamente.
  */
-const clearRandomPassword = (verification) => __awaiter(void 0, void 0, void 0, function* () {
+const clearRandomPassword = async (verification) => {
     verification.randomPassword = '';
     verification.verificationCodeExpiration = new Date();
-    yield verification.save();
-});
-const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    await verification.save();
+};
+const resetPassword = async (req, res) => {
     const { usernameOrEmail, randomPassword, newPassword } = req.body;
     try {
-        const user = yield findUser(usernameOrEmail);
+        const user = await findUser(usernameOrEmail);
         if (!user) {
             return handleResponse(res, 404, messages_1.errorMessages.userNotFound);
         }
         validateAccountAndVerification(user, res, randomPassword, newPassword);
-        yield updateAndClearPassword(user, user.verification, newPassword);
+        await updateAndClearPassword(user, user.verification, newPassword);
         res.json({ msg: messages_1.successMessages.passwordUpdated });
     }
     catch (error) {
         handleServerError(error, res);
     }
-});
+};
 exports.resetPassword = resetPassword;
 const validateAccountAndVerification = (user, res, randomPassword, newPassword) => {
     validateAccountVerification(user, res);
@@ -171,14 +162,14 @@ const handleResponse = (res, statusCode, message) => {
     res.status(statusCode).json({ msg: message });
     throw new Error(message);
 };
-const findUser = (usernameOrEmail) => __awaiter(void 0, void 0, void 0, function* () {
+const findUser = async (usernameOrEmail) => {
     if (EMAIL_REGEX.test(usernameOrEmail)) {
-        return yield authModel_1.Auth.findOne({ where: { email: usernameOrEmail }, include: [verificationModel_1.Verification] });
+        return await authModel_1.Auth.findOne({ where: { email: usernameOrEmail }, include: [verificationModel_1.Verification] });
     }
     else {
-        return yield authModel_1.Auth.findOne({ where: { username: usernameOrEmail }, include: [verificationModel_1.Verification] });
+        return await authModel_1.Auth.findOne({ where: { username: usernameOrEmail }, include: [verificationModel_1.Verification] });
     }
-});
+};
 const validateUserExistence = (user, res) => {
     if (!user) {
         res.status(404).json({ msg: messages_1.errorMessages.userNotFound });
@@ -202,16 +193,16 @@ const validatePasswordError = (passwordValidationError, res) => {
         res.status(400).json({ msg: passwordValidationError });
     }
 };
-const updateAndClearPassword = (user, verification, newPassword) => __awaiter(void 0, void 0, void 0, function* () {
-    const hashedPassword = yield bcryptjs_1.default.hash(newPassword, 10);
+const updateAndClearPassword = async (user, verification, newPassword) => {
+    const hashedPassword = await bcryptjs_1.default.hash(newPassword, 10);
     user.password = hashedPassword;
     if (verification) {
         verification.randomPassword = '';
         verification.verificationCodeExpiration = new Date();
-        yield verification.save();
+        await verification.save();
     }
-    yield user.save();
-});
+    await user.save();
+};
 const handleServerError = (error, res) => {
     console.error('Error al resetear la contraseña:', error);
     res.status(500).json({ msg: messages_1.errorMessages.serverError, error: error });

@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requestPasswordReset = void 0;
 const authModel_1 = require("../../../../models/authModel");
@@ -22,14 +13,14 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * @param {string} usernameOrEmail - Nombre de usuario o correo electrónico.
  * @returns {Promise<AuthModel | null>} - Usuario encontrado o nulo si no se encuentra.
  */
-const findUser = (usernameOrEmail) => __awaiter(void 0, void 0, void 0, function* () {
+const findUser = async (usernameOrEmail) => {
     if (EMAIL_REGEX.test(usernameOrEmail)) {
-        return yield authModel_1.Auth.findOne({ where: { email: usernameOrEmail }, include: [verificationModel_1.Verification] });
+        return await authModel_1.Auth.findOne({ where: { email: usernameOrEmail }, include: [verificationModel_1.Verification] });
     }
     else {
-        return yield authModel_1.Auth.findOne({ where: { username: usernameOrEmail }, include: [verificationModel_1.Verification] });
+        return await authModel_1.Auth.findOne({ where: { username: usernameOrEmail }, include: [verificationModel_1.Verification] });
     }
-});
+};
 /**
  * Verifica si la cuenta del usuario está verificada.
  * @param {AuthModel | null} user - Usuario.
@@ -44,19 +35,19 @@ const isAccountVerified = (user) => {
  * @param {VerificationModel} verification - Registro de verificación.
  * @returns {string} - Nueva contraseña aleatoria generada.
  */
-const generateAndSetRandomPassword = (verification) => __awaiter(void 0, void 0, void 0, function* () {
+const generateAndSetRandomPassword = async (verification) => {
     const randomPassword = (0, passwordUtils_1.generateRandomPassword)(8);
     const expirationTime = new Date();
     expirationTime.setMinutes(expirationTime.getMinutes() + 5);
     verification.randomPassword = randomPassword;
     verification.verificationCodeExpiration = expirationTime;
-    yield verification.save();
-    setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
+    await verification.save();
+    setTimeout(async () => {
         verification.randomPassword = '';
-        yield verification.save();
-    }), 5 * 60 * 1000);
+        await verification.save();
+    }, 5 * 60 * 1000);
     return randomPassword;
-});
+};
 /**
  * Valida la entrada del usuario.
  * @param {string} usernameOrEmail - Nombre de usuario o correo electrónico.
@@ -78,39 +69,39 @@ const validateInput = (usernameOrEmail, res) => {
  * @param {Response} res - Objeto de respuesta de Express.
  * @returns {Promise<void>} - Responde con un mensaje y puede enviar un correo electrónico de recuperación de contraseña.
  */
-const handlePasswordResetLogic = (user, res) => __awaiter(void 0, void 0, void 0, function* () {
+const handlePasswordResetLogic = async (user, res) => {
     if (!isAccountVerified(user)) {
         res.status(400).json({
             msg: messages_1.errorMessages.unverifiedAccount,
         });
     }
     else {
-        const randomPassword = yield generateAndSetRandomPassword(user.verification);
-        const emailSent = yield (0, emailUtils_1.sendPasswordResetEmail)(user.email, user.username, randomPassword);
+        const randomPassword = await generateAndSetRandomPassword(user.verification);
+        const emailSent = await (0, emailUtils_1.sendPasswordResetEmail)(user.email, user.username, randomPassword);
         res.json({
             msg: messages_1.successMessages.passwordResetEmailSent,
         });
     }
-});
+};
 /**
  * Maneja la lógica de solicitud de recuperación de contraseña.
  * @param {Request} req - Objeto de solicitud de Express.
  * @param {Response} res - Objeto de respuesta de Express.
  * @returns {Promise<void>} - Responde con un mensaje y puede enviar un correo electrónico de recuperación de contraseña.
  */
-const requestPasswordReset = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const requestPasswordReset = async (req, res) => {
     const { usernameOrEmail } = req.body;
     if (!validateInput(usernameOrEmail, res)) {
         return;
     }
     try {
-        const user = yield findUser(usernameOrEmail);
-        yield handlePasswordReset(user, res);
+        const user = await findUser(usernameOrEmail);
+        await handlePasswordReset(user, res);
     }
     catch (error) {
         handlePasswordResetError(error, res);
     }
-});
+};
 exports.requestPasswordReset = requestPasswordReset;
 /**
  * Maneja la lógica de solicitud de recuperación de contraseña.
@@ -118,7 +109,7 @@ exports.requestPasswordReset = requestPasswordReset;
  * @param {Response} res - Objeto de respuesta de Express.
  * @returns {Promise<void>} - Responde con un mensaje y puede enviar un correo electrónico de recuperación de contraseña.
  */
-const handlePasswordReset = (user, res) => __awaiter(void 0, void 0, void 0, function* () {
+const handlePasswordReset = async (user, res) => {
     // Verifica si el usuario existe
     if (!user) {
         userNotFoundResponse(res);
@@ -130,12 +121,12 @@ const handlePasswordReset = (user, res) => __awaiter(void 0, void 0, void 0, fun
         return;
     }
     // Genera una nueva contraseña aleatoria y actualiza el registro de verificación
-    const randomPassword = yield generateAndSetRandomPassword(user.verification);
+    const randomPassword = await generateAndSetRandomPassword(user.verification);
     // Envía un correo electrónico con la nueva contraseña aleatoria
-    const emailSent = yield (0, emailUtils_1.sendPasswordResetEmail)(user.email, user.username, randomPassword);
+    const emailSent = await (0, emailUtils_1.sendPasswordResetEmail)(user.email, user.username, randomPassword);
     // Responde con un mensaje de éxito
     successResponse(res, messages_1.successMessages.passwordResetEmailSent);
-});
+};
 /**
  * Responde con un mensaje de error cuando no se encuentra el usuario.
  * @param {Response} res - Objeto de respuesta de Express.

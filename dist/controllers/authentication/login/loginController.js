@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loginUser = void 0;
 const messages_1 = require("../../../middleware/messages");
@@ -30,34 +21,34 @@ const handleUnverifiedUser = (res) => {
  * @param res - La respuesta HTTP para la solicitud.
  * @returns Un mensaje de error en formato JSON.
  */
-const handleLockedAccount = (username, res) => __awaiter(void 0, void 0, void 0, function* () {
-    yield (0, authUtils_1.lockAccount)(username);
+const handleLockedAccount = async (username, res) => {
+    await (0, authUtils_1.lockAccount)(username);
     return res.status(400).json({ msg: messages_1.errorMessages.accountLocked });
-});
+};
 /**
  * Maneja la respuesta cuando se ingresa una contraseña incorrecta.
  * @param user - El usuario que intentó iniciar sesión.
  * @param res - La respuesta HTTP para la solicitud.
  * @returns Un mensaje de error en formato JSON con información sobre los intentos de inicio de sesión.
  */
-const handleIncorrectPassword = (user, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const updatedLoginAttempts = yield incrementLoginAttempts(user);
+const handleIncorrectPassword = async (user, res) => {
+    const updatedLoginAttempts = await incrementLoginAttempts(user);
     if (updatedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
         return handleLockedAccount(user.username, res);
     }
     const errorMessage = messages_1.errorMessages.incorrectPassword(updatedLoginAttempts);
     return sendBadRequest(res, errorMessage);
-});
+};
 /**
  * Incrementa el contador de intentos de inicio de sesión de un usuario.
  * @param user - El usuario cuyo contador de intentos de inicio de sesión se incrementará.
  * @returns La cantidad actualizada de intentos de inicio de sesión.
  */
-const incrementLoginAttempts = (user) => __awaiter(void 0, void 0, void 0, function* () {
+const incrementLoginAttempts = async (user) => {
     const updatedLoginAttempts = (user.verification.loginAttempts || 0) + 1;
-    yield user.verification.update({ loginAttempts: updatedLoginAttempts });
+    await user.verification.update({ loginAttempts: updatedLoginAttempts });
     return updatedLoginAttempts;
-});
+};
 /**
  * Maneja la respuesta cuando un usuario inicia sesión con éxito.
  * @param user - El usuario que inició sesión.
@@ -93,27 +84,54 @@ const sendDatabaseError = (res, error) => res.status(500).json({ msg: messages_1
  * @param res - La respuesta HTTP.
  * @returns Respuestas de éxito o error en formato JSON, según el resultado del inicio de sesión.
  */
-const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const loginUser = async (req, res) => {
     const { username, passwordorrandomPassword } = req.body;
     try {
-        const user = yield (0, userService_1.getUserByUsername)(username);
-        if (!user) {
-            return sendBadRequest(res, messages_1.errorMessages.userNotExists(username));
-        }
-        if (!isUserVerified(user, res) || handleBlockExpiration(user, res)) {
-            return;
-        }
-        if (!(yield (0, authService_1.validatePassword)(user, passwordorrandomPassword))) {
+        const user = await verifyUser(username, passwordorrandomPassword, res);
+        if (user && !(await (0, authService_1.validatePassword)(user, passwordorrandomPassword))) {
             return handleIncorrectPassword(user, res);
         }
-        yield (0, userService_1.resetLoginAttempts)(user);
-        return handleSuccessfulLogin(user, res, passwordorrandomPassword);
+        if (user) {
+            await (0, userService_1.resetLoginAttempts)(user);
+            return handleSuccessfulLogin(user, res, passwordorrandomPassword);
+        }
     }
     catch (error) {
-        return sendDatabaseError(res, error);
+        return handleErrorResponse(res, error);
     }
-});
+};
 exports.loginUser = loginUser;
+/**
+ * Maneja la respuesta para errores de la base de datos.
+ * @param res - La respuesta HTTP para la solicitud.
+ * @param error - El error de la base de datos.
+ * @returns Un mensaje de error en formato JSON con información sobre el error de la base de datos.
+ */
+const handleErrorResponse = (res, error) => {
+    return res.status(500).json({ msg: messages_1.errorMessages.databaseError, error });
+};
+/**
+ * Verifica la existencia y estado de un usuario antes de iniciar sesión.
+ * @param username - El nombre de usuario del usuario.
+ * @param password - La contraseña proporcionada durante el inicio de sesión.
+ * @param res - La respuesta HTTP para la solicitud.
+ * @returns El objeto de usuario si la verificación es exitosa, de lo contrario, retorna null.
+ */
+const verifyUser = async (username, password, res) => {
+    // Obtiene el usuario de la base de datos utilizando el nombre de usuario.
+    const user = await (0, userService_1.getUserByUsername)(username);
+    // Verifica si el usuario no existe y envía una respuesta de error si es así.
+    if (!user) {
+        sendBadRequest(res, messages_1.errorMessages.userNotExists(username));
+        return null;
+    }
+    // Verifica si el usuario está verificado y no está bloqueado antes de continuar.
+    if (!isUserVerified(user, res) || handleBlockExpiration(user, res)) {
+        return null;
+    }
+    // Retorna el objeto de usuario si todas las verificaciones son exitosas.
+    return user;
+};
 /**
  * Verifica si un usuario está verificado, es decir, si su correo electrónico y número de teléfono han sido verificados.
  * @param user - El usuario a verificar.

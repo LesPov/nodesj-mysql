@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -26,7 +17,7 @@ const PASSWORD_REGEX_UPPERCASE = /[A-Z]/;
 const PASSWORD_REGEX_LOWERCASE = /[a-z]/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VERIFICATION_CODE_EXPIRATION_HOURS = 24;
-const newUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const newUser = async (req, res) => {
     const { username, password, email, rol } = req.body;
     //1. Verificar que todos los campos obligatorios estén presentes en la solicitud
     if (!username || !password || !email || !rol) {
@@ -65,20 +56,20 @@ const newUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
     }
     //7. Validamos si el usuario ya existe en la base de datos
-    const user = yield authModel_1.Auth.findOne({ where: { username: username } });
+    const user = await authModel_1.Auth.findOne({ where: { username: username } });
     if (user) {
         return res.status(400).json({
             msg: messages_1.errorMessages.userExists(username),
         });
     }
     //7. Validamos si el usuario ya existe en la base de datos
-    const useremail = yield authModel_1.Auth.findOne({ where: { email: email } });
+    const useremail = await authModel_1.Auth.findOne({ where: { email: email } });
     if (useremail) {
         return res.status(400).json({
             msg: messages_1.errorMessages.userEmailExists(email),
         });
     }
-    const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
+    const hashedPassword = await bcryptjs_1.default.hash(password, 10);
     //8. Generar el código de verificación único
     try {
         // Generar el código de verificación único
@@ -87,27 +78,27 @@ const newUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const expirationDate = new Date();
         expirationDate.setHours(expirationDate.getHours() + VERIFICATION_CODE_EXPIRATION_HOURS);
         //10. Guardar usuario en la base de datos con el código de verificación y fecha de expiración
-        const newUser = yield authModel_1.Auth.create({
+        const newUser = await authModel_1.Auth.create({
             username: username,
             password: hashedPassword,
             email: email,
             rol: rol,
         });
-        yield profileAdminModel_1.UserProfile.create({
+        await profileAdminModel_1.UserProfile.create({
             userId: newUser.id, // Asociar con el ID del usuario creado
             firstName: '', // Aquí puedes definir los valores iniciales que quieras para el perfil
             lastName: '',
             // Otros campos del perfil que desees inicializar
         });
         // Crear la entrada de verificación asociada al usuario
-        yield verificationModel_1.Verification.create({
+        await verificationModel_1.Verification.create({
             isVerified: false,
             verificationCode: verificationCode,
             verificationCodeExpiration: expirationDate,
             userId: newUser.id, // Usar el ID del usuario recién creado
         });
         // Enviar el código de verificación por correo electrónico
-        const verificationEmailSent = yield (0, emailVerificationController_1.sendVerificationEmail)(email, username, verificationCode);
+        const verificationEmailSent = await (0, emailVerificationController_1.sendVerificationEmail)(email, username, verificationCode);
         //15. Crear el mensaje de respuesta basado en el rol del usuario
         let userMessage = '';
         if (rol === 'admin') {
@@ -126,5 +117,5 @@ const newUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             error,
         });
     }
-});
+};
 exports.newUser = newUser;

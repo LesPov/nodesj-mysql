@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -28,7 +19,7 @@ const VERIFICATION_CODE_EXPIRATION_HOURS = 24;
  * @param {string} verificationCode - Código de verificación generado.
  * @returns {boolean} - True si el correo se envía con éxito, False si hay un error.
  */
-const sendVerificationEmail = (email, username, verificationCode) => __awaiter(void 0, void 0, void 0, function* () {
+const sendVerificationEmail = async (email, username, verificationCode) => {
     try {
         // Obtiene la ruta absoluta del archivo de plantilla de correo electrónico
         const templatePath = path_1.default.join(__dirname, '../..', 'templates', 'verificationEmail.html');
@@ -54,14 +45,14 @@ const sendVerificationEmail = (email, username, verificationCode) => __awaiter(v
             html: personalizedEmail, // Utiliza el contenido personalizado en el cuerpo del correo
         };
         // Envía el correo de verificación
-        yield transporter.sendMail(mailOptions);
+        await transporter.sendMail(mailOptions);
         return true; // Indica que el correo de verificación se envió con éxito
     }
     catch (error) {
         console.error('Error al enviar el correo de verificación:', error);
         return false; // Indica que hubo un error al enviar el correo de verificación
     }
-});
+};
 exports.sendVerificationEmail = sendVerificationEmail;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
@@ -71,12 +62,12 @@ exports.sendVerificationEmail = sendVerificationEmail;
 * @param {Response} res - El objeto de respuesta de Express.
 * @returns {Promise<void>} Una promesa que resuelve cuando se completa la verificación.
 */
-const verifyUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const verifyUser = async (req, res) => {
     // Extraer el nombre de usuario y el código de verificación del cuerpo de la solicitud.
     const { username, verificationCode } = req.body;
     try {
         // Buscar el usuario en la base de datos utilizando el nombre de usuario.
-        const user = yield authModel_1.Auth.findOne({ where: { username: username }, include: [verificationModel_1.Verification] });
+        const user = await authModel_1.Auth.findOne({ where: { username: username }, include: [verificationModel_1.Verification] });
         // Si no se encuentra el usuario, responder con un mensaje de error.
         if (!user) {
             return res.status(400).json({
@@ -104,10 +95,10 @@ const verifyUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             });
         }
         // Marcar el correo electrónico como verificado en la tabla Verification.
-        yield verificationModel_1.Verification.update({ isEmailVerified: true }, { where: { userId: user.id } });
+        await verificationModel_1.Verification.update({ isEmailVerified: true }, { where: { userId: user.id } });
         if (user.isPhoneVerified) {
             // Marcar el usuario como verificado en la tabla Verification si el teléfono también está verificado.
-            yield verificationModel_1.Verification.update({ isVerified: true }, { where: { userId: user.id } });
+            await verificationModel_1.Verification.update({ isVerified: true }, { where: { userId: user.id } });
         }
         // Responder con un mensaje de éxito.
         res.json({
@@ -121,7 +112,7 @@ const verifyUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             error,
         });
     }
-});
+};
 exports.verifyUser = verifyUser;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
@@ -130,12 +121,12 @@ exports.verifyUser = verifyUser;
  * @param {Response} res - Objeto de respuesta de Express.
  * @returns {Response} - Respuesta JSON con un mensaje indicando el estado de la operación.
  */
-const resendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const resendVerificationCode = async (req, res) => {
     // Extraer el nombre de usuario del cuerpo de la solicitud
     const { username } = req.body;
     try {
         // Buscar el usuario en la base de datos, incluyendo su información de verificación
-        const user = yield authModel_1.Auth.findOne({ where: { username: username }, include: [verificationModel_1.Verification] });
+        const user = await authModel_1.Auth.findOne({ where: { username: username }, include: [verificationModel_1.Verification] });
         // Si el usuario no existe, responder con un mensaje de error
         if (!user) {
             return res.status(400).json({
@@ -154,20 +145,20 @@ const resendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, f
         const expirationDate = new Date();
         expirationDate.setHours(expirationDate.getHours() + VERIFICATION_CODE_EXPIRATION_HOURS);
         // Verificar si ya existe un registro de verificación para el usuario
-        let verificationRecord = yield verificationModel_1.Verification.findOne({ where: { userId: user.id } });
+        let verificationRecord = await verificationModel_1.Verification.findOne({ where: { userId: user.id } });
         // Si no existe, crear uno
         if (!verificationRecord) {
-            verificationRecord = yield verificationModel_1.Verification.create({
+            verificationRecord = await verificationModel_1.Verification.create({
                 userId: user.id,
             });
         }
         // Actualizar el código de verificación en la tabla 'Verification'
-        yield verificationRecord.update({
+        await verificationRecord.update({
             verificationCode: newVerificationCode,
             verificationCodeExpiration: expirationDate,
         });
         // Enviar el correo de verificación
-        const emailSent = yield (0, exports.sendVerificationEmail)(user.email, user.username, newVerificationCode);
+        const emailSent = await (0, exports.sendVerificationEmail)(user.email, user.username, newVerificationCode);
         // Si el correo se envía con éxito, responder con un mensaje de éxito
         if (emailSent) {
             res.json({
@@ -188,5 +179,5 @@ const resendVerificationCode = (req, res) => __awaiter(void 0, void 0, void 0, f
             error,
         });
     }
-});
+};
 exports.resendVerificationCode = resendVerificationCode;

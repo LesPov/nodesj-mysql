@@ -104,27 +104,59 @@ export const loginUser = async (req: Request, res: Response) => {
   const { username, passwordorrandomPassword } = req.body;
 
   try {
-    const user: any = await getUserByUsername(username);
+    const user = await verifyUser(username, passwordorrandomPassword, res);
 
-    if (!user) {
-      return sendBadRequest(res, errorMessages.userNotExists(username));
-    }
-
-    if (!isUserVerified(user, res) || handleBlockExpiration(user, res)) {
-      return;
-    }
-
-    if (!(await validatePassword(user, passwordorrandomPassword))) {
+    if (user && !(await validatePassword(user, passwordorrandomPassword))) {
       return handleIncorrectPassword(user, res);
     }
 
-    await resetLoginAttempts(user);
-
-    return handleSuccessfulLogin(user, res, passwordorrandomPassword);
+    if (user) {
+      await resetLoginAttempts(user);
+      return handleSuccessfulLogin(user, res, passwordorrandomPassword);
+    }
   } catch (error) {
-    return sendDatabaseError(res, error);
+    return handleErrorResponse(res, error);
   }
 };
+
+/**
+ * Maneja la respuesta para errores de la base de datos.
+ * @param res - La respuesta HTTP para la solicitud.
+ * @param error - El error de la base de datos.
+ * @returns Un mensaje de error en formato JSON con información sobre el error de la base de datos.
+ */
+const handleErrorResponse = (res: Response, error: any) => {
+  return res.status(500).json({ msg: errorMessages.databaseError, error });
+};
+
+/**
+ * Verifica la existencia y estado de un usuario antes de iniciar sesión.
+ * @param username - El nombre de usuario del usuario.
+ * @param password - La contraseña proporcionada durante el inicio de sesión.
+ * @param res - La respuesta HTTP para la solicitud.
+ * @returns El objeto de usuario si la verificación es exitosa, de lo contrario, retorna null.
+ */
+const verifyUser = async (username: string, password: string, res: Response) => {
+  // Obtiene el usuario de la base de datos utilizando el nombre de usuario.
+  const user: any = await getUserByUsername(username);
+
+  // Verifica si el usuario no existe y envía una respuesta de error si es así.
+  if (!user) {
+    sendBadRequest(res, errorMessages.userNotExists(username));
+    return null;
+  }
+
+  // Verifica si el usuario está verificado y no está bloqueado antes de continuar.
+  if (!isUserVerified(user, res) || handleBlockExpiration(user, res)) {
+    return null;
+  }
+
+  // Retorna el objeto de usuario si todas las verificaciones son exitosas.
+  return user;
+};
+
+
+
 
 /**
  * Verifica si un usuario está verificado, es decir, si su correo electrónico y número de teléfono han sido verificados.
@@ -190,7 +222,7 @@ const handleBlockExpiration = (user: any, res: Response): boolean => {
 const isAccountBlocked = (user: any): boolean => {
   const blockExpiration = user.verification.blockExpiration;
   const currentDate = new Date();
-  
+
   return blockExpiration && blockExpiration > currentDate;
 };
 
