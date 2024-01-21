@@ -6,11 +6,7 @@ import { errorMessages, successMessages } from '../../../../middleware/messages'
 import { sendPasswordResetEmail } from '../../../../utils/emailUtils';
 import { generateRandomPassword } from '../../../../utils/passwordUtils';
 
-const PASSWORD_MIN_LENGTH = 10;
-const PASSWORD_REGEX_NUMBER = /\d/;
-const PASSWORD_REGEX_UPPERCASE = /[A-Z]/;
-const PASSWORD_REGEX_LOWERCASE = /[a-z]/;
-const PASSWORD_REGEX_SPECIAL = /[&$@_/-]/;
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /////////////////////////////////////////////////////////////envioPasswordReset//////////////////////////////////////////////////////////////////////////

@@ -15,11 +15,6 @@ const verificationModel_1 = require("../../../../models/verificationModel");
 const messages_1 = require("../../../../middleware/messages");
 const emailUtils_1 = require("../../../../utils/emailUtils");
 const passwordUtils_1 = require("../../../../utils/passwordUtils");
-const PASSWORD_MIN_LENGTH = 10;
-const PASSWORD_REGEX_NUMBER = /\d/;
-const PASSWORD_REGEX_UPPERCASE = /[A-Z]/;
-const PASSWORD_REGEX_LOWERCASE = /[a-z]/;
-const PASSWORD_REGEX_SPECIAL = /[&$@_/-]/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /////////////////////////////////////////////////////////////envioPasswordReset//////////////////////////////////////////////////////////////////////////
 /**
