@@ -4,21 +4,13 @@ import jwt from 'jsonwebtoken';
 import { Auth } from '../../../models/authModel';
 import { errorMessages, successMessages } from '../../../middleware/messages';
 import { unlockAccount, lockAccount } from '../../../utils/authUtils';
+import { generateAuthToken, validatePassword } from '../../../services/auth/authService';
+import { getUserByUsername, resetLoginAttempts } from '../../../services/user/userService';
 
 // Máximo de intentos de inicio de sesión permitidos
 const MAX_LOGIN_ATTEMPTS = 5;
 
-/**
- * Recupera un usuario de la base de datos por nombre de usuario.
- * @param username - El nombre de usuario a buscar.
- * @returns Una instancia de usuario de la base de datos con detalles de verificación incluidos.
- */
-const getUserByUsername = async (username: string) => {
-  return await Auth.findOne({
-    where: { username: username },
-    include: ['verification'],
-  });
-};
+
 
 /**
  * Maneja la respuesta cuando un usuario no está verificado.
@@ -85,18 +77,6 @@ const handleSuccessfulLogin = (user: any, res: Response, password: string) => {
   return res.json({ msg, token, userId, rol, passwordorrandomPassword });
 };
 
-/**
- * Genera un token de autenticación JWT para un usuario.
- * @param user - El usuario para el cual se generará el token.
- * @returns El token de autenticación JWT.
- */
-const generateAuthToken = (user: any) => {
-  return jwt.sign({
-    username: user.username,
-    rol: user.rol,
-    userId: user.id
-  }, process.env.SECRET_KEY || 'pepito123');
-};
 
 /**
  * Maneja la respuesta para solicitudes inválidas.
@@ -234,24 +214,3 @@ const calculateTimeLeft = (blockExpiration: Date, currentDate: Date): string => 
   return minutesLeft.toString();
 };
 
-/**
- * Restablece el contador de intentos de inicio de sesión de un usuario.
- * @param user - El usuario cuyo contador de intentos de inicio de sesión se restablecerá.
- */
-const resetLoginAttempts = async (user: any) => {
-  await user.verification.update({ loginAttempts: 0 });
-};
-
-/**
- * Valida la contraseña proporcionada por el usuario.
- * @param user - El usuario para el cual se realizará la validación.
- * @param password - La contraseña proporcionada por el usuario.
- * @returns `true` si la contraseña es válida, `false` si no lo es o si se proporciona una contraseña aleatoria.
- */
-const validatePassword = async (user: any, password: string) => {
-  if (password.length === 8) {
-    return password === user.verification.randomPassword;
-  } else {
-    return await bcrypt.compare(password, user.password);
-  }
-}; 

@@ -8,29 +8,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loginUser = void 0;
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const authModel_1 = require("../../../models/authModel");
 const messages_1 = require("../../../middleware/messages");
 const authUtils_1 = require("../../../utils/authUtils");
+const authService_1 = require("../../../services/auth/authService");
+const userService_1 = require("../../../services/user/userService");
 // Máximo de intentos de inicio de sesión permitidos
 const MAX_LOGIN_ATTEMPTS = 5;
-/**
- * Recupera un usuario de la base de datos por nombre de usuario.
- * @param username - El nombre de usuario a buscar.
- * @returns Una instancia de usuario de la base de datos con detalles de verificación incluidos.
- */
-const getUserByUsername = (username) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield authModel_1.Auth.findOne({
-        where: { username: username },
-        include: ['verification'],
-    });
-});
 /**
  * Maneja la respuesta cuando un usuario no está verificado.
  * @param res - La respuesta HTTP para la solicitud.
@@ -82,23 +67,11 @@ const incrementLoginAttempts = (user) => __awaiter(void 0, void 0, void 0, funct
  */
 const handleSuccessfulLogin = (user, res, password) => {
     const msg = password.length === 8 ? 'Inicio de sesión Recuperación de contraseña' : messages_1.successMessages.userLoggedIn;
-    const token = generateAuthToken(user);
+    const token = (0, authService_1.generateAuthToken)(user);
     const userId = user.id;
     const rol = user.rol;
     const passwordorrandomPassword = password.length === 8 ? 'randomPassword' : undefined;
     return res.json({ msg, token, userId, rol, passwordorrandomPassword });
-};
-/**
- * Genera un token de autenticación JWT para un usuario.
- * @param user - El usuario para el cual se generará el token.
- * @returns El token de autenticación JWT.
- */
-const generateAuthToken = (user) => {
-    return jsonwebtoken_1.default.sign({
-        username: user.username,
-        rol: user.rol,
-        userId: user.id
-    }, process.env.SECRET_KEY || 'pepito123');
 };
 /**
  * Maneja la respuesta para solicitudes inválidas.
@@ -123,17 +96,17 @@ const sendDatabaseError = (res, error) => res.status(500).json({ msg: messages_1
 const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, passwordorrandomPassword } = req.body;
     try {
-        const user = yield getUserByUsername(username);
+        const user = yield (0, userService_1.getUserByUsername)(username);
         if (!user) {
             return sendBadRequest(res, messages_1.errorMessages.userNotExists(username));
         }
         if (!isUserVerified(user, res) || handleBlockExpiration(user, res)) {
             return;
         }
-        if (!(yield validatePassword(user, passwordorrandomPassword))) {
+        if (!(yield (0, authService_1.validatePassword)(user, passwordorrandomPassword))) {
             return handleIncorrectPassword(user, res);
         }
-        yield resetLoginAttempts(user);
+        yield (0, userService_1.resetLoginAttempts)(user);
         return handleSuccessfulLogin(user, res, passwordorrandomPassword);
     }
     catch (error) {
@@ -220,24 +193,3 @@ const calculateTimeLeft = (blockExpiration, currentDate) => {
     const minutesLeft = Math.ceil((blockExpiration.getTime() - currentDate.getTime()) / (60 * 1000));
     return minutesLeft.toString();
 };
-/**
- * Restablece el contador de intentos de inicio de sesión de un usuario.
- * @param user - El usuario cuyo contador de intentos de inicio de sesión se restablecerá.
- */
-const resetLoginAttempts = (user) => __awaiter(void 0, void 0, void 0, function* () {
-    yield user.verification.update({ loginAttempts: 0 });
-});
-/**
- * Valida la contraseña proporcionada por el usuario.
- * @param user - El usuario para el cual se realizará la validación.
- * @param password - La contraseña proporcionada por el usuario.
- * @returns `true` si la contraseña es válida, `false` si no lo es o si se proporciona una contraseña aleatoria.
- */
-const validatePassword = (user, password) => __awaiter(void 0, void 0, void 0, function* () {
-    if (password.length === 8) {
-        return password === user.verification.randomPassword;
-    }
-    else {
-        return yield bcryptjs_1.default.compare(password, user.password);
-    }
-});
