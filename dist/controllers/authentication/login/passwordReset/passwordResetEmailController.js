@@ -12,62 +12,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.requestPasswordReset = exports.sendPasswordResetEmail = void 0;
-const nodemailer_1 = __importDefault(require("nodemailer"));
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
+exports.resetPassword = exports.requestPasswordReset = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const authModel_1 = require("../../../../models/authModel");
 const verificationModel_1 = require("../../../../models/verificationModel"); // Importa el modelo de verificación
 const messages_1 = require("../../../../middleware/messages");
+const emailUtils_1 = require("../../../../utils/emailUtils");
+const passwordUtils_1 = require("../../../../utils/passwordUtils");
 const PASSWORD_MIN_LENGTH = 10;
 const PASSWORD_REGEX_NUMBER = /\d/;
 const PASSWORD_REGEX_UPPERCASE = /[A-Z]/;
 const PASSWORD_REGEX_LOWERCASE = /[a-z]/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX_SPECIAL = /[&$@_/-]/;
-/**
- * Envía un correo electrónico de recuperación de contraseña con una nueva contraseña aleatoria.
- * @param {string} email - Dirección de correo electrónico del destinatario.
- * @param {string} username - Nombre de usuario del destinatario.
- * @param {string} randomPassword - Nueva contraseña aleatoria generada.
- * @returns {Promise<boolean>} - Indica si el correo de recuperación de contraseña se envió con éxito.
- */
-const sendPasswordResetEmail = (email, username, randomPassword) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        // Obtener la ruta absoluta del archivo de plantilla de correo electrónico
-        const templatePath = path_1.default.join(__dirname, '../../..', 'templates', 'randomPasswordEmail.html');
-        // Leer la plantilla HTML desde el archivo
-        const emailTemplate = fs_1.default.readFileSync(templatePath, 'utf-8');
-        // Reemplazar el marcador de posición {{ username }} con el nombre de usuario real
-        // y {{ randomPassword }} con la nueva contraseña aleatoria
-        const personalizedEmail = emailTemplate.replace('{{ username }}', username).replace('{{ randomPassword }}', randomPassword);
-        // Crear el transporte de nodemailer para enviar correos electrónicos
-        const transporter = nodemailer_1.default.createTransport({
-            service: 'gmail', // Usar el servicio de correo Gmail
-            auth: {
-                user: process.env.MAIL_USER, // Nombre de usuario del remitente
-                pass: process.env.MAIL_PASS, // Contraseña del remitente
-            },
-            secure: true, // Usar una conexión segura
-        });
-        // Configurar las opciones del correo electrónico
-        const mailOptions = {
-            from: process.env.MAIL_USER, // Dirección de correo del remitente
-            to: email, // Dirección de correo del destinatario
-            subject: 'Recuperación de Contraseña', // Asunto del correo
-            html: personalizedEmail, // Contenido personalizado del correo en formato HTML
-        };
-        // Enviar el correo de recuperación de contraseña
-        yield transporter.sendMail(mailOptions);
-        return true; // Indicar que el correo de recuperación de contraseña se envió con éxito
-    }
-    catch (error) {
-        console.error('Error al enviar el correo de recuperación de contraseña:', error);
-        return false; // Indicar que hubo un error al enviar el correo de recuperación de contraseña
-    }
-});
-exports.sendPasswordResetEmail = sendPasswordResetEmail;
 /**
  * Solicita la recuperación de contraseña para un usuario específico.
  * @param {Request} req - Objeto de solicitud de Express.
@@ -106,7 +63,7 @@ const requestPasswordReset = (req, res) => __awaiter(void 0, void 0, void 0, fun
             });
         }
         // Generar una nueva contraseña aleatoria
-        const randomPassword = generateRandomPassword(8);
+        const randomPassword = (0, passwordUtils_1.generateRandomPassword)(8);
         // Establecer un tiempo de expiración para la contraseña aleatoria (5 minutos)
         const expirationTime = new Date();
         expirationTime.setMinutes(expirationTime.getMinutes() + 5); // Expira después de 5 minutos
@@ -119,7 +76,7 @@ const requestPasswordReset = (req, res) => __awaiter(void 0, void 0, void 0, fun
             yield verification.save();
         }), 5 * 60 * 1000); // 5 minutos en milisegundos
         // Enviar un correo de recuperación de contraseña al usuario
-        const emailSent = yield (0, exports.sendPasswordResetEmail)(user.email, user.username, randomPassword);
+        const emailSent = yield (0, emailUtils_1.sendPasswordResetEmail)(user.email, user.username, randomPassword);
         // Responder con un mensaje de éxito
         res.json({
             msg: messages_1.successMessages.passwordResetEmailSent,
@@ -221,19 +178,3 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.resetPassword = resetPassword;
-/**
- * Genera una contraseña aleatoria.
- * @param {number} length - Longitud de la contraseña generada.
- * @returns {string} - Contraseña aleatoria.
- */
-function generateRandomPassword(length) {
-    // Caracteres válidos para la contraseña
-    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let randomPassword = ''; // Inicializa la contraseña aleatoria como una cadena vacía
-    // Genera caracteres aleatorios hasta alcanzar la longitud deseada
-    for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * characters.length); // Genera un índice aleatorio
-        randomPassword += characters.charAt(randomIndex); // Añade el carácter correspondiente a la contraseña
-    }
-    return randomPassword; // Retorna la contraseña aleatoria generada
-}

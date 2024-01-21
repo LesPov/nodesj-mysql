@@ -6,6 +6,8 @@ import bcrypt from 'bcryptjs';
 import { Auth, AuthModel } from '../../../../models/authModel';
 import { Verification, VerificationModel } from '../../../../models/verificationModel'; // Importa el modelo de verificación
 import { errorMessages, successMessages } from '../../../../middleware/messages';
+import { sendPasswordResetEmail } from '../../../../utils/emailUtils';
+import { generateRandomPassword } from '../../../../utils/passwordUtils';
 
 const PASSWORD_MIN_LENGTH = 10;
 const PASSWORD_REGEX_NUMBER = /\d/;
@@ -14,52 +16,6 @@ const PASSWORD_REGEX_LOWERCASE = /[a-z]/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX_SPECIAL = /[&$@_/-]/;
 
-/**
- * Envía un correo electrónico de recuperación de contraseña con una nueva contraseña aleatoria.
- * @param {string} email - Dirección de correo electrónico del destinatario.
- * @param {string} username - Nombre de usuario del destinatario.
- * @param {string} randomPassword - Nueva contraseña aleatoria generada.
- * @returns {Promise<boolean>} - Indica si el correo de recuperación de contraseña se envió con éxito.
- */
-export const sendPasswordResetEmail = async (email: string, username: string, randomPassword: string): Promise<boolean> => {
-    try {
-        // Obtener la ruta absoluta del archivo de plantilla de correo electrónico
-        const templatePath = path.join(__dirname, '../../..', 'templates', 'randomPasswordEmail.html');
-
-        // Leer la plantilla HTML desde el archivo
-        const emailTemplate = fs.readFileSync(templatePath, 'utf-8');
-
-        // Reemplazar el marcador de posición {{ username }} con el nombre de usuario real
-        // y {{ randomPassword }} con la nueva contraseña aleatoria
-        const personalizedEmail = emailTemplate.replace('{{ username }}', username).replace('{{ randomPassword }}', randomPassword);
-
-        // Crear el transporte de nodemailer para enviar correos electrónicos
-        const transporter = nodemailer.createTransport({
-            service: 'gmail', // Usar el servicio de correo Gmail
-            auth: {
-                user: process.env.MAIL_USER, // Nombre de usuario del remitente
-                pass: process.env.MAIL_PASS, // Contraseña del remitente
-            },
-            secure: true, // Usar una conexión segura
-        });
-
-        // Configurar las opciones del correo electrónico
-        const mailOptions = {
-            from: process.env.MAIL_USER, // Dirección de correo del remitente
-            to: email, // Dirección de correo del destinatario
-            subject: 'Recuperación de Contraseña', // Asunto del correo
-            html: personalizedEmail, // Contenido personalizado del correo en formato HTML
-        };
-
-        // Enviar el correo de recuperación de contraseña
-        await transporter.sendMail(mailOptions);
-
-        return true; // Indicar que el correo de recuperación de contraseña se envió con éxito
-    } catch (error) {
-        console.error('Error al enviar el correo de recuperación de contraseña:', error);
-        return false; // Indicar que hubo un error al enviar el correo de recuperación de contraseña
-    }
-};
 
 
 
@@ -253,23 +209,3 @@ export const resetPassword = async (req: Request, res: Response) => {
 
 
 
-
-/**
- * Genera una contraseña aleatoria.
- * @param {number} length - Longitud de la contraseña generada.
- * @returns {string} - Contraseña aleatoria.
- */
-function generateRandomPassword(length: number): string {
-    // Caracteres válidos para la contraseña
-    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    
-    let randomPassword = ''; // Inicializa la contraseña aleatoria como una cadena vacía
-
-    // Genera caracteres aleatorios hasta alcanzar la longitud deseada
-    for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * characters.length); // Genera un índice aleatorio
-        randomPassword += characters.charAt(randomIndex); // Añade el carácter correspondiente a la contraseña
-    }
-
-    return randomPassword; // Retorna la contraseña aleatoria generada
-}
