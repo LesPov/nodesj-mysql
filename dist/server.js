@@ -22,6 +22,7 @@ const cors_1 = __importDefault(require("cors"));
 const signupVerificationRoutes_1 = __importDefault(require("./routes/authentication/signup/signupVerificationRoutes")); // Importar las rutas de signin
 const loginVerificationRoutes_1 = __importDefault(require("./routes/authentication/login/loginVerificationRoutes")); // Importar las rutas de login
 const passwordResetEmailRoutes_1 = __importDefault(require("./routes/authentication/login/PasswordReset/passwordResetEmailRoutes")); // Importar las rutas de login
+const passwordRecoveryRoutes_1 = __importDefault(require("./routes/authentication/login/PasswordReset/passwordRecoveryRoutes")); // Importar las rutas de login
 const emailVerificationRoutes_1 = __importDefault(require("./routes/authentication/email/emailVerificationRoutes"));
 const phoneVerificationRoutes_1 = __importDefault(require("./routes/authentication/phone/phoneVerificationRoutes"));
 const countryRoutes_1 = __importDefault(require("./routes/authentication/pais/countryRoutes"));
@@ -57,7 +58,7 @@ class Server {
      * Configura las rutas de la aplicación.
      */
     routes() {
-        this.app.use('/api/auth', signupVerificationRoutes_1.default, loginVerificationRoutes_1.default, passwordResetEmailRoutes_1.default, emailVerificationRoutes_1.default, phoneVerificationRoutes_1.default, countryRoutes_1.default);
+        this.app.use('/api/auth', signupVerificationRoutes_1.default, loginVerificationRoutes_1.default, passwordResetEmailRoutes_1.default, passwordRecoveryRoutes_1.default, emailVerificationRoutes_1.default, phoneVerificationRoutes_1.default, countryRoutes_1.default);
         this.app.use('/api/admin', profileAdminRoutes_1.default, imageRoutes_1.default); // Utiliza las rutas específicas para operaciones administrativas
     }
     /**
