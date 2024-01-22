@@ -34,29 +34,61 @@ const isRandomPasswordValid = (verification, randomPassword) => {
     return verification.randomPassword === randomPassword && verification.verificationCodeExpiration >= new Date();
 };
 /**
+ * Validar la longitud mínima de la contraseña.
+ * @param newPassword - Nueva contraseña a validar.
+ * @returns Mensajes de error si la longitud no cumple con las reglas, nulo si es válida.
+ */
+const validateLength = (newPassword) => {
+    return newPassword.length < PASSWORD_MIN_LENGTH ? messages_1.errorMessages.passwordTooShort : null;
+};
+/**
+ * Validar la presencia de al menos una letra mayúscula en la contraseña.
+ * @param newPassword - Nueva contraseña a validar.
+ * @returns Mensajes de error si no cumple con las reglas, nulo si es válida.
+ */
+const validateUppercase = (newPassword) => {
+    return PASSWORD_REGEX_UPPERCASE.test(newPassword) ? null : messages_1.errorMessages.passwordNoUppercase;
+};
+/**
+ * Validar la presencia de al menos una letra minúscula en la contraseña.
+ * @param newPassword - Nueva contraseña a validar.
+ * @returns Mensajes de error si no cumple con las reglas, nulo si es válida.
+ */
+const validateLowercase = (newPassword) => {
+    return PASSWORD_REGEX_LOWERCASE.test(newPassword) ? null : messages_1.errorMessages.passwordNoLowercase;
+};
+/**
+ * Validar la presencia de al menos un número en la contraseña.
+ * @param newPassword - Nueva contraseña a validar.
+ * @returns Mensajes de error si no cumple con las reglas, nulo si es válida.
+ */
+const validateNumber = (newPassword) => {
+    return PASSWORD_REGEX_NUMBER.test(newPassword) ? null : messages_1.errorMessages.passwordNoNumber;
+};
+/**
+ * Validar la presencia de al menos un carácter especial en la contraseña.
+ * @param newPassword - Nueva contraseña a validar.
+ * @returns Mensajes de error si no cumple con las reglas, nulo si es válida.
+ */
+const validateSpecialChar = (newPassword) => {
+    return PASSWORD_REGEX_SPECIAL.test(newPassword) ? null : messages_1.errorMessages.passwordNoSpecialChar;
+};
+/**
  * Validar la nueva contraseña según las reglas establecidas.
  * @param newPassword - Nueva contraseña a validar.
  * @returns Mensajes de error si la contraseña no cumple con las reglas, nulo si es válida.
  */
 const validateNewPassword = (newPassword) => {
-    const errors = [];
-    if (newPassword.length < PASSWORD_MIN_LENGTH) {
-        errors.push('La contraseña debe tener al menos 10 caracteres');
-    }
-    if (!PASSWORD_REGEX_UPPERCASE.test(newPassword)) {
-        errors.push('La contraseña debe contener al menos una letra mayúscula.');
-    }
-    if (!PASSWORD_REGEX_LOWERCASE.test(newPassword)) {
-        errors.push('La contraseña debe contener al menos una letra minúscula.');
-    }
-    if (!PASSWORD_REGEX_NUMBER.test(newPassword)) {
-        errors.push('La contraseña debe contener al menos un número.');
-    }
-    if (!PASSWORD_REGEX_SPECIAL.test(newPassword)) {
-        errors.push('La contraseña debe contener al menos un carácter especial.');
-    }
+    const errors = [
+        validateLength(newPassword),
+        validateUppercase(newPassword),
+        validateLowercase(newPassword),
+        validateNumber(newPassword),
+        validateSpecialChar(newPassword),
+    ].filter((error) => error !== null);
     return errors;
 };
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Controlador para resetear la contraseña mediante el envío de un correo electrónico.
  * @param req - Objeto de solicitud.
@@ -67,39 +99,65 @@ const resetPassword = async (req, res) => {
     try {
         const user = await findUser(usernameOrEmail);
         if (!user) {
-            // Cambia este bloque para que responda con "userNotFound" en lugar de "invalidRandomPassword"
             handleResponse(res, 404, { msg: messages_1.errorMessages.userNotFound });
             return;
         }
-        validateAccountAndVerification(user, res, randomPassword, newPassword);
-        await updateAndClearPassword(user, user.verification, newPassword);
-        // Evitar enviar múltiples respuestas HTTP después de la actualización de la contraseña.
-        if (!res.headersSent) {
-            res.json({ msg: messages_1.successMessages.passwordUpdated });
-        }
+        validateAndResetPassword(user, res, randomPassword, newPassword);
     }
     catch (error) {
         handleServerError(error, res);
     }
 };
 exports.resetPassword = resetPassword;
+/**
+ * Valida y actualiza la contraseña del usuario.
+ * @param user - Objeto de modelo de usuario.
+ * @param res - Objeto de respuesta.
+ * @param randomPassword - Contraseña aleatoria proporcionada.
+ * @param newPassword - Nueva contraseña a establecer.
+ */
+const validateAndResetPassword = async (user, res, randomPassword, newPassword) => {
+    try {
+        validateAccountAndVerification(user, res, randomPassword, newPassword);
+        await updateAndClearPassword(user, user.verification, newPassword);
+        if (!res.headersSent) {
+            res.status(200).json({ msg: messages_1.successMessages.passwordUpdated });
+        }
+    }
+    catch (error) {
+        handleServerError(error, res);
+    }
+};
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const validateAccountAndVerification = (user, res, randomPassword, newPassword) => {
     validateAccountVerification(user, res);
     const verification = getVerification(user);
     validateRandomPasswordAndNewPassword(verification, res, randomPassword, newPassword);
 };
-const validateRandomPasswordAndNewPassword = (verification, res, randomPassword, newPassword) => {
+const validateRandomPassword = (verification, res, randomPassword) => {
     if (!verification || !isRandomPasswordValid(verification, randomPassword)) {
         handleResponse(res, 400, { msg: messages_1.errorMessages.invalidRandomPassword });
-        return;
+        return false;
     }
+    return true;
+};
+const validatePasswordErrors = (res, newPassword) => {
     const passwordValidationErrors = validateNewPassword(newPassword);
     if (passwordValidationErrors.length > 0) {
         handleResponse(res, 400, { msg: messages_1.errorMessages.passwordValidationFailed, errors: passwordValidationErrors });
+        return passwordValidationErrors;
+    }
+    return [];
+};
+const validateRandomPasswordAndNewPassword = (verification, res, randomPassword, newPassword) => {
+    if (!validateRandomPassword(verification, res, randomPassword)) {
+        return;
+    }
+    const passwordErrors = validatePasswordErrors(res, newPassword);
+    if (passwordErrors.length > 0) {
         return;
     }
 };
-// Resto del código (funciones handleResponse, findUser, validateAccountVerification, getVerification, updateAndClearPassword, handleServerError, etc.)
 const handleResponse = (res, statusCode, response) => {
     res.status(statusCode).json(response);
 };
