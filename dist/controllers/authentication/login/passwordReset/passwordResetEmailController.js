@@ -88,7 +88,6 @@ const validateNewPassword = (newPassword) => {
     ].filter((error) => error !== null);
     return errors;
 };
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Controlador para resetear la contraseña mediante el envío de un correo electrónico.
  * @param req - Objeto de solicitud.
