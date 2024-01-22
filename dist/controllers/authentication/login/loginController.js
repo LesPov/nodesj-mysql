@@ -8,14 +8,6 @@ const userService_1 = require("../../../services/user/userService");
 // Máximo de intentos de inicio de sesión permitidos
 const MAX_LOGIN_ATTEMPTS = 5;
 /**
- * Maneja la respuesta cuando un usuario no está verificado.
- * @param res - La respuesta HTTP para la solicitud.
- * @returns Un mensaje de error en formato JSON.
- */
-const handleUnverifiedUser = (res) => {
-    return res.status(400).json({ msg: messages_1.errorMessages.userNotVerified });
-};
-/**
  * Bloquea una cuenta y maneja la respuesta cuando se intenta acceder a una cuenta bloqueada.
  * @param username - El nombre de usuario cuya cuenta se va a bloquear.
  * @param res - La respuesta HTTP para la solicitud.
@@ -50,13 +42,66 @@ const incrementLoginAttempts = async (user) => {
     return updatedLoginAttempts;
 };
 /**
+ * Maneja la respuesta para solicitudes inválidas.
+ * @param res - La respuesta HTTP para la solicitud.
+ * @param msg - El mensaje de error.
+ * @returns Un mensaje de error en formato JSON.
+ */
+const sendBadRequest = (res, msg) => res.status(400).json({ msg });
+/**
+ * Maneja la solicitud de inicio de sesión de un usuario.
+ * @param req - La solicitud HTTP.
+ * @param res - La respuesta HTTP.
+ * @returns Respuestas de éxito o error en formato JSON, según el resultado del inicio de sesión.
+ */
+const loginUser = async (req, res) => {
+    try {
+        const { username, passwordorrandomPassword } = req.body;
+        const user = await authenticateUser(username, passwordorrandomPassword, res);
+        if (user) {
+            await handleSuccessfulLogin(user, res, passwordorrandomPassword);
+        }
+    }
+    catch (error) {
+        handleErrorResponse(res, error);
+    }
+};
+exports.loginUser = loginUser;
+/**
+ * Autentica al usuario y maneja las verificaciones necesarias.
+ * @param username - El nombre de usuario del usuario a autenticar.
+ * @param password - La contraseña asociada al usuario (puede ser opcional).
+ * @param res - La respuesta HTTP utilizada para manejar los errores.
+ * @returns {Promise<any>} - Una promesa que resuelve en el usuario autenticado.
+ * @throws {Error} - Se lanza un error si la autenticación del usuario falla o si el usuario no se encuentra.
+ */
+const authenticateUser = async (username, password, res) => {
+    const user = await getUserByUsernameOrThrow(username);
+    verifyUserVerification(user, res);
+    validateUserPassword(user, password, res);
+    await (0, userService_1.resetLoginAttempts)(user);
+    return user;
+};
+/**
+ * Valida la contraseña del usuario.
+ * @param user - El usuario para el cual se verificará la contraseña.
+ * @param password - La contraseña proporcionada para la autenticación.
+ * @param res - La respuesta HTTP utilizada para manejar los errores.
+ * @throws {Error} - Se lanza un error si la contraseña no es válida.
+ */
+const validateUserPassword = async (user, password, res) => {
+    if (!(await (0, authService_1.validatePassword)(user, password))) {
+        handleIncorrectPassword(user, res);
+    }
+};
+/**
  * Maneja la respuesta cuando un usuario inicia sesión con éxito.
  * @param user - El usuario que inició sesión.
  * @param res - La respuesta HTTP para la solicitud.
  * @param password - La contraseña utilizada para iniciar sesión.
  * @returns Un mensaje de éxito en formato JSON con el token de autenticación, el ID del usuario, el rol y, opcionalmente, la información de la contraseña.
  */
-const handleSuccessfulLogin = (user, res, password) => {
+const handleSuccessfulLogin = async (user, res, password) => {
     const msg = password.length === 8 ? 'Inicio de sesión Recuperación de contraseña' : messages_1.successMessages.userLoggedIn;
     const token = (0, authService_1.generateAuthToken)(user);
     const userId = user.id;
@@ -65,72 +110,61 @@ const handleSuccessfulLogin = (user, res, password) => {
     return res.json({ msg, token, userId, rol, passwordorrandomPassword });
 };
 /**
- * Maneja la respuesta para solicitudes inválidas.
- * @param res - La respuesta HTTP para la solicitud.
- * @param msg - El mensaje de error.
- * @returns Un mensaje de error en formato JSON.
- */
-const sendBadRequest = (res, msg) => res.status(400).json({ msg });
-/**
- * Maneja la respuesta para errores de la base de datos.
- * @param res - La respuesta HTTP para la solicitud.
- * @param error - El error de la base de datos.
- * @returns Un mensaje de error en formato JSON con información sobre el error de la base de datos.
- */
-const sendDatabaseError = (res, error) => res.status(500).json({ msg: messages_1.errorMessages.databaseError, error });
-/**
- * Maneja la solicitud de inicio de sesión de un usuario.
- * @param req - La solicitud HTTP.
- * @param res - La respuesta HTTP.
- * @returns Respuestas de éxito o error en formato JSON, según el resultado del inicio de sesión.
- */
-const loginUser = async (req, res) => {
-    const { username, passwordorrandomPassword } = req.body;
-    try {
-        const user = await verifyUser(username, passwordorrandomPassword, res);
-        if (user && !(await (0, authService_1.validatePassword)(user, passwordorrandomPassword))) {
-            return handleIncorrectPassword(user, res);
-        }
-        if (user) {
-            await (0, userService_1.resetLoginAttempts)(user);
-            return handleSuccessfulLogin(user, res, passwordorrandomPassword);
-        }
-    }
-    catch (error) {
-        return handleErrorResponse(res, error);
-    }
-};
-exports.loginUser = loginUser;
-/**
  * Maneja la respuesta para errores de la base de datos.
  * @param res - La respuesta HTTP para la solicitud.
  * @param error - El error de la base de datos.
  * @returns Un mensaje de error en formato JSON con información sobre el error de la base de datos.
  */
 const handleErrorResponse = (res, error) => {
-    return res.status(500).json({ msg: messages_1.errorMessages.databaseError, error });
+    // Asegúrate de no enviar múltiples respuestas
+    if (!res.headersSent) {
+        return res.status(500).json({ msg: messages_1.errorMessages.databaseError, error });
+    }
 };
 /**
- * Verifica la existencia y estado de un usuario antes de iniciar sesión.
- * @param username - El nombre de usuario del usuario.
- * @param password - La contraseña proporcionada durante el inicio de sesión.
- * @param res - La respuesta HTTP para la solicitud.
- * @returns El objeto de usuario si la verificación es exitosa, de lo contrario, retorna null.
+ * Obtiene un usuario por nombre de usuario.
+ *
+ * @param {string} username - El nombre de usuario del usuario a buscar.
+ * @returns {Promise<any>} - Una promesa que resuelve en el usuario encontrado.
+ * @throws {Error} - Se lanza un error si el usuario no se encuentra.
+ */ const getUserByUsernameOrThrow = async (username) => {
+    const user = await (0, userService_1.getUserByUsername)(username);
+    if (!user) {
+        throw new Error("User not found");
+    }
+    return user;
+};
+/**
+ * Verifica la información del usuario, incluida la verificación del correo electrónico y el bloqueo de la cuenta.
+ *
+ * @param {any} user - El objeto de usuario a verificar.
+ * @param {Response} res - La respuesta HTTP utilizada para manejar los errores.
+ * @throws {Error} - Se lanza un error si la verificación del usuario falla.
+ */
+const verifyUserVerification = (user, res) => {
+    if (!isUserVerified(user, res) || handleBlockExpiration(user, res)) {
+        throw new Error("User verification failed");
+    }
+};
+/**
+ * Verifica la existencia del usuario y realiza la verificación del usuario.
+ *
+ * @param {string} username - El nombre de usuario del usuario a verificar.
+ * @param {string} password - La contraseña asociada al usuario (puede ser opcional).
+ * @param {Response} res - La respuesta HTTP utilizada para manejar los errores.
+ * @returns {Promise<any>} - Una promesa que resuelve en el usuario verificado.
+ * @throws {Error} - Se lanza un error si la verificación del usuario falla o si el usuario no se encuentra.
  */
 const verifyUser = async (username, password, res) => {
-    // Obtiene el usuario de la base de datos utilizando el nombre de usuario.
-    const user = await (0, userService_1.getUserByUsername)(username);
-    // Verifica si el usuario no existe y envía una respuesta de error si es así.
-    if (!user) {
-        sendBadRequest(res, messages_1.errorMessages.userNotExists(username));
-        return null;
+    try {
+        const user = await getUserByUsernameOrThrow(username);
+        verifyUserVerification(user, res);
+        return user;
     }
-    // Verifica si el usuario está verificado y no está bloqueado antes de continuar.
-    if (!isUserVerified(user, res) || handleBlockExpiration(user, res)) {
-        return null;
+    catch (error) {
+        // Puedes manejar el error aquí o simplemente dejarlo propagar hacia arriba.
+        throw error;
     }
-    // Retorna el objeto de usuario si todas las verificaciones son exitosas.
-    return user;
 };
 /**
  * Verifica si un usuario está verificado, es decir, si su correo electrónico y número de teléfono han sido verificados.
@@ -151,7 +185,7 @@ const isUserVerified = (user, res) => {
  */
 const isEmailVerified = (user, res) => {
     if (!user.verification.isEmailVerified) {
-        handleUnverifiedUser(res);
+        res.status(400).json({ msg: messages_1.errorMessages.userNotVerified });
         return false;
     }
     return true;
