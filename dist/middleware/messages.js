@@ -51,6 +51,7 @@ exports.errorMessages = {
     invalidRandomPassworde: 'ya expiro la contraseña',
     incorrectPasswordWithAttempts: 'se requiere la contraseña normal',
     incorrectRandomPassword: 'la contraseña no es valida',
+    userAlreadyVerifiedInvalidCode: 'El usuario ya está verificado, pero el código proporcionado es incorrecto.',
     passwordNoSpecialChar: 'La contraseña debe contener al menos uno de los siguientes signos: & $ @ _ - /',
     errorMessages: 'Error al subir img',
     ////////////////////imagenes msg de errror ////////////////

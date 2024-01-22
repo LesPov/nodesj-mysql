@@ -24,7 +24,7 @@ export const errorMessages = {
   accessDenied: 'Acceso denegado, no tienes permisos para acceder a esta ruta',
   invalidToken: 'Token no válido',
   accessDeniedNoToken: 'Acceso denegado',
-  serverError:'servidor error',
+  serverError: 'servidor error',
   // Errores de verificación de usuario   
   userAlreadyVerified: 'El usuario ya ha sido verificado previamente',
   verificationCodeExpired: 'El código de verificación ha expirado. Registra una nueva cuenta para obtener un nuevo código.',
@@ -54,11 +54,12 @@ export const errorMessages = {
   invalidRandomPassworde: 'ya expiro la contraseña',
   incorrectPasswordWithAttempts: 'se requiere la contraseña normal',
   incorrectRandomPassword: 'la contraseña no es valida',
+  userAlreadyVerifiedInvalidCode:'El usuario ya está verificado, pero el código proporcionado es incorrecto.',
   passwordNoSpecialChar: 'La contraseña debe contener al menos uno de los siguientes signos: & $ @ _ - /',
-  errorMessages:'Error al subir img',
+  errorMessages: 'Error al subir img',
 
-////////////////////imagenes msg de errror ////////////////
-  noFileUploaded:'Acesso denegado ussuraio ahi un archivo xd',
+  ////////////////////imagenes msg de errror ////////////////
+  noFileUploaded: 'Acesso denegado ussuraio ahi un archivo xd',
   userProfileNotFound: 'Perfil de usuario no encontrado',
   invalidImageFormat: 'Formato de imagen inválido. Por favor, sube una imagen válida en formato JPG, JPEG, PNG o GIF',
   unexpectedError: 'Ocurrió un error inesperado al procesar la imagen',
@@ -91,5 +92,5 @@ export const successMessages = {
 
   passwordUpdated: 'Contraseña actualizada con éxito.',
 
-  profilePictureUploaded:'la imagen fue actualizada',
+  profilePictureUploaded: 'la imagen fue actualizada',
 };

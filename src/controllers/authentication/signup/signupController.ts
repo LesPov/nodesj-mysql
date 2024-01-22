@@ -31,8 +31,11 @@ export const newUser = async (req: Request, res: Response) => {
 
     // Validar los requisitos de la contraseña
     const passwordValidationErrors = validatePasswordRequirements(password);
-    handlePasswordValidationErrors(passwordValidationErrors, res);
-
+    // Verificar si hay errores de validación de contraseña
+    if (passwordValidationErrors.length > 0) {
+      handlePasswordValidationErrors(passwordValidationErrors, res);
+      return; // Salir de la función para evitar enviar respuestas adicionales
+    }
     // Validar el formato del correo electrónico
     validateEmail(email);
 
