@@ -94,8 +94,6 @@ const validateNewPassword = (newPassword: string): string[] => {
     return errors;
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 /**
  * Controlador para resetear la contraseña mediante el envío de un correo electrónico.
  * @param req - Objeto de solicitud.
@@ -140,8 +138,6 @@ const validateAndResetPassword = async (user: AuthModel, res: Response, randomPa
 };
 
 
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const validateAccountAndVerification = (user: AuthModel, res: Response, randomPassword: string, newPassword: string): void => {
     validateAccountVerification(user, res);

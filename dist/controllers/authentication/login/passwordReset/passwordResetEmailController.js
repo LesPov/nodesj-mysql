@@ -128,7 +128,6 @@ const validateAndResetPassword = async (user, res, randomPassword, newPassword) 
         handleServerError(error, res);
     }
 };
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const validateAccountAndVerification = (user, res, randomPassword, newPassword) => {
     validateAccountVerification(user, res);
     const verification = getVerification(user);
