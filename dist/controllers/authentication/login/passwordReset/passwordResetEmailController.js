@@ -15,19 +15,6 @@ const PASSWORD_REGEX_LOWERCASE = /[a-z]/;
 const PASSWORD_REGEX_SPECIAL = /[&$@_/-]/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /**
- * Buscar al usuario en la base de datos según el nombre de usuario o correo electrónico.
- * @param {string} usernameOrEmail - Nombre de usuario o correo electrónico.
- * @returns {Promise<AuthModel | null>} - Usuario encontrado o nulo si no existe.
- */
-const findUserByUsernameOrEmail = async (usernameOrEmail) => {
-    if (EMAIL_REGEX.test(usernameOrEmail)) {
-        return await authModel_1.Auth.findOne({ where: { email: usernameOrEmail }, include: [verificationModel_1.Verification] });
-    }
-    else {
-        return await authModel_1.Auth.findOne({ where: { username: usernameOrEmail }, include: [verificationModel_1.Verification] });
-    }
-};
-/**
  * Verificar si la cuenta del usuario está verificada.
  * @param {AuthModel} user - Usuario para verificar.
  * @returns {boolean} - True si la cuenta está verificada, false de lo contrario.
@@ -47,96 +34,49 @@ const isRandomPasswordValid = (verification, randomPassword) => {
     return verification.randomPassword === randomPassword && verification.verificationCodeExpiration >= new Date();
 };
 /**
- * Validar la longitud mínima de la contraseña.
- * @param {string} newPassword - Nueva contraseña a validar.
- * @returns {string | null} - Mensaje de error si la longitud es insuficiente, nulo si es válida.
- */
-const validateMinLength = (newPassword) => {
-    return newPassword.length < PASSWORD_MIN_LENGTH ? messages_1.errorMessages.passwordTooShort : null;
-};
-/**
- * Validar la presencia de al menos un número en la contraseña.
- * @param {string} newPassword - Nueva contraseña a validar.
- * @returns {string | null} - Mensaje de error si no hay un número, nulo si es válida.
- */
-const validateNumber = (newPassword) => {
-    return PASSWORD_REGEX_NUMBER.test(newPassword) ? null : messages_1.errorMessages.passwordNoNumber;
-};
-/**
- * Validar la presencia de al menos una mayúscula en la contraseña.
- * @param {string} newPassword - Nueva contraseña a validar.
- * @returns {string | null} - Mensaje de error si no hay una mayúscula, nulo si es válida.
- */
-const validateUppercase = (newPassword) => {
-    return PASSWORD_REGEX_UPPERCASE.test(newPassword) ? null : messages_1.errorMessages.passwordNoUppercase;
-};
-/**
- * Validar la presencia de al menos una minúscula en la contraseña.
- * @param {string} newPassword - Nueva contraseña a validar.
- * @returns {string | null} - Mensaje de error si no hay una minúscula, nulo si es válida.
- */
-const validateLowercase = (newPassword) => {
-    return PASSWORD_REGEX_LOWERCASE.test(newPassword) ? null : messages_1.errorMessages.passwordNoLowercase;
-};
-/**
- * Validar la presencia de al menos un carácter especial en la contraseña.
- * @param {string} newPassword - Nueva contraseña a validar.
- * @returns {string | null} - Mensaje de error si no hay un carácter especial, nulo si es válida.
- */
-const validateSpecialChar = (newPassword) => {
-    return PASSWORD_REGEX_SPECIAL.test(newPassword) ? null : messages_1.errorMessages.passwordNoSpecialChar;
-};
-/**
  * Validar la nueva contraseña según las reglas establecidas.
- * @param {string} newPassword - Nueva contraseña a validar.
- * @returns {string | null} - Mensaje de error si la contraseña no cumple con las reglas, nulo si es válida.
+ * @param newPassword - Nueva contraseña a validar.
+ * @returns Mensajes de error si la contraseña no cumple con las reglas, nulo si es válida.
  */
 const validateNewPassword = (newPassword) => {
-    const validators = [
-        validateMinLength,
-        validateNumber,
-        validateUppercase,
-        validateLowercase,
-        validateSpecialChar,
-    ];
-    for (const validator of validators) {
-        const errorMessage = validator(newPassword);
-        if (errorMessage !== null) {
-            return errorMessage;
-        }
+    const errors = [];
+    if (newPassword.length < PASSWORD_MIN_LENGTH) {
+        errors.push('La contraseña debe tener al menos 10 caracteres');
     }
-    return null; // La contraseña cumple con todas las reglas.
+    if (!PASSWORD_REGEX_UPPERCASE.test(newPassword)) {
+        errors.push('La contraseña debe contener al menos una letra mayúscula.');
+    }
+    if (!PASSWORD_REGEX_LOWERCASE.test(newPassword)) {
+        errors.push('La contraseña debe contener al menos una letra minúscula.');
+    }
+    if (!PASSWORD_REGEX_NUMBER.test(newPassword)) {
+        errors.push('La contraseña debe contener al menos un número.');
+    }
+    if (!PASSWORD_REGEX_SPECIAL.test(newPassword)) {
+        errors.push('La contraseña debe contener al menos un carácter especial.');
+    }
+    return errors;
 };
 /**
- * Encriptar la nueva contraseña y actualizarla en el usuario.
- * @param {AuthModel} user - Usuario al que se le actualizará la contraseña.
- * @param {string} newPassword - Nueva contraseña a encriptar y asignar al usuario.
- * @returns {Promise<void>} - Resuelve cuando la contraseña se ha actualizado correctamente.
+ * Controlador para resetear la contraseña mediante el envío de un correo electrónico.
+ * @param req - Objeto de solicitud.
+ * @param res - Objeto de respuesta.
  */
-const updatePassword = async (user, newPassword) => {
-    const hashedPassword = await bcryptjs_1.default.hash(newPassword, 10);
-    user.password = hashedPassword;
-};
-/**
- * Limpiar la contraseña aleatoria y actualizar la fecha de expiración en el registro de verificación.
- * @param {VerificationModel} verification - Registro de verificación al que se le actualizarán los datos.
- * @returns {Promise<void>} - Resuelve cuando se han actualizado los datos correctamente.
- */
-const clearRandomPassword = async (verification) => {
-    verification.randomPassword = '';
-    verification.verificationCodeExpiration = new Date();
-    await verification.save();
-};
 const resetPassword = async (req, res) => {
     const { usernameOrEmail, randomPassword, newPassword } = req.body;
     try {
         const user = await findUser(usernameOrEmail);
         if (!user) {
-            return handleResponse(res, 404, messages_1.errorMessages.userNotFound);
+            // Cambia este bloque para que responda con "userNotFound" en lugar de "invalidRandomPassword"
+            handleResponse(res, 404, { msg: messages_1.errorMessages.userNotFound });
+            return;
         }
         validateAccountAndVerification(user, res, randomPassword, newPassword);
         await updateAndClearPassword(user, user.verification, newPassword);
-        res.json({ msg: messages_1.successMessages.passwordUpdated });
+        // Evitar enviar múltiples respuestas HTTP después de la actualización de la contraseña.
+        if (!res.headersSent) {
+            res.json({ msg: messages_1.successMessages.passwordUpdated });
+        }
     }
     catch (error) {
         handleServerError(error, res);
@@ -150,17 +90,18 @@ const validateAccountAndVerification = (user, res, randomPassword, newPassword) 
 };
 const validateRandomPasswordAndNewPassword = (verification, res, randomPassword, newPassword) => {
     if (!verification || !isRandomPasswordValid(verification, randomPassword)) {
-        handleResponse(res, 400, messages_1.errorMessages.invalidRandomPassword);
+        handleResponse(res, 400, { msg: messages_1.errorMessages.invalidRandomPassword });
         return;
     }
-    const passwordValidationError = validateNewPassword(newPassword);
-    if (passwordValidationError) {
-        handleResponse(res, 400, passwordValidationError);
+    const passwordValidationErrors = validateNewPassword(newPassword);
+    if (passwordValidationErrors.length > 0) {
+        handleResponse(res, 400, { msg: messages_1.errorMessages.passwordValidationFailed, errors: passwordValidationErrors });
+        return;
     }
 };
-const handleResponse = (res, statusCode, message) => {
-    res.status(statusCode).json({ msg: message });
-    throw new Error(message);
+// Resto del código (funciones handleResponse, findUser, validateAccountVerification, getVerification, updateAndClearPassword, handleServerError, etc.)
+const handleResponse = (res, statusCode, response) => {
+    res.status(statusCode).json(response);
 };
 const findUser = async (usernameOrEmail) => {
     if (EMAIL_REGEX.test(usernameOrEmail)) {
@@ -170,11 +111,6 @@ const findUser = async (usernameOrEmail) => {
         return await authModel_1.Auth.findOne({ where: { username: usernameOrEmail }, include: [verificationModel_1.Verification] });
     }
 };
-const validateUserExistence = (user, res) => {
-    if (!user) {
-        res.status(404).json({ msg: messages_1.errorMessages.userNotFound });
-    }
-};
 const validateAccountVerification = (user, res) => {
     if (!isAccountVerified(user)) {
         res.status(400).json({ msg: messages_1.errorMessages.unverifiedAccount });
@@ -182,16 +118,6 @@ const validateAccountVerification = (user, res) => {
 };
 const getVerification = (user) => {
     return user.verification;
-};
-const validateRandomPassword = (verification, randomPassword, res) => {
-    if (!verification || !isRandomPasswordValid(verification, randomPassword)) {
-        res.status(400).json({ msg: messages_1.errorMessages.invalidRandomPassword });
-    }
-};
-const validatePasswordError = (passwordValidationError, res) => {
-    if (passwordValidationError) {
-        res.status(400).json({ msg: passwordValidationError });
-    }
 };
 const updateAndClearPassword = async (user, verification, newPassword) => {
     const hashedPassword = await bcryptjs_1.default.hash(newPassword, 10);
@@ -205,5 +131,7 @@ const updateAndClearPassword = async (user, verification, newPassword) => {
 };
 const handleServerError = (error, res) => {
     console.error('Error al resetear la contraseña:', error);
-    res.status(500).json({ msg: messages_1.errorMessages.serverError, error: error });
+    if (!res.headersSent) {
+        res.status(500).json({ msg: messages_1.errorMessages.serverError, error: error });
+    }
 };

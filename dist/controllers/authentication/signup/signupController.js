@@ -9,7 +9,7 @@ const authModel_1 = require("../../../models/authModel");
 const profileAdminModel_1 = require("../../../models/profileAdminModel");
 const verificationModel_1 = require("../../../models/verificationModel");
 const messages_1 = require("../../../middleware/messages");
-const emailVerificationController_1 = require("../email/emailVerificationController");
+const emailUtils_1 = require("../../../utils/emailUtils");
 const generateCode_1 = require("../../../utils/generateCode");
 // Constantes y expresiones regulares
 const PASSWORD_MIN_LENGTH = 10;
@@ -46,7 +46,7 @@ const newUser = async (req, res) => {
         // Generar y guardar el código de verificación
         const verificationCode = await generateAndSaveVerificationCode(newUser.id, email);
         // Enviar correo electrónico de verificación
-        await (0, emailVerificationController_1.sendVerificationEmail)(email, username, verificationCode);
+        await (0, emailUtils_1.sendVerificationEmail)(email, username, verificationCode);
         // Obtener el mensaje de usuario según el rol
         const userMessage = getRoleMessage(rol);
         // Responder con un mensaje de éxito

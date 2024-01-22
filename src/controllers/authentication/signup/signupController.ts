@@ -5,7 +5,7 @@ import { Auth } from '../../../models/authModel';
 import { UserProfile } from '../../../models/profileAdminModel';
 import { Verification } from '../../../models/verificationModel';
 import { errorMessages, successMessages } from '../../../middleware/messages';
-import { sendVerificationEmail } from '../email/emailVerificationController';
+import { sendVerificationEmail } from '../../../utils/emailUtils';
 import { generateVerificationCode } from '../../../utils/generateCode';
 
 // Constantes y expresiones regulares

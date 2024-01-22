@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { Auth } from '../../../models/authModel';
 import { errorMessages, successMessages } from '../../../middleware/messages';
-import { unlockAccount, lockAccount } from '../../../utils/authUtils';
+import { lockAccount } from '../../../utils/authUtils';
 import { generateAuthToken, validatePassword } from '../../../services/auth/authService';
 import { getUserByUsername, resetLoginAttempts } from '../../../services/user/userService';
 

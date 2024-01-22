@@ -46,6 +46,8 @@ export const errorMessages = {
   // Errores de recuperación y cambio de contraseña
   missingUsernameOrEmail: 'Se requiere el nombre de usuario o correo electrónico.',
   userNotFound: 'Usuario no encontrado',
+  passwordValidationFailed: 'La contraseña no cumple con los requisitos de validación',
+
   unverifiedAccount: 'Tu correo electrónico o número teléfono no han sido verificados.',
   invalidRandomPassword: 'Contraseña aleatoria incorrecta',
   invalidNewPassword: 'contraseña lol',
