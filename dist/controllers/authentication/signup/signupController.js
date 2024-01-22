@@ -113,7 +113,6 @@ const handleServerError = (error, res) => {
         });
     }
 };
-// Cambios en validatePasswordRequirements
 /**
  * Validar los requisitos de la contraseña.
  * @param password - Contraseña a validar.
