@@ -51,7 +51,7 @@ export const sendPasswordResetEmail = async (email: string, username: string, ra
 export const sendVerificationEmail = async (email: string, username: string, verificationCode: string) => {
     try {
       // Obtiene la ruta absoluta del archivo de plantilla de correo electrónico
-      const templatePath = path.join(__dirname, '..', 'controllers', 'templates', 'randomPasswordEmail.html');
+      const templatePath = path.join(__dirname, '..', 'controllers', 'templates', 'verificationEmail.html');
   
       // Lee la plantilla de correo electrónico desde el archivo
       const emailTemplate = fs.readFileSync(templatePath, 'utf-8');
